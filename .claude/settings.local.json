@@ -3,7 +3,18 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(mongod:*)",
-      "Bash(node config/seed.js:*)"
+      "Bash(node config/seed.js:*)",
+      "Bash(if [ -d \"node_modules\" ])",
+      "Bash(then echo \"Dependencies already installed\")",
+      "Bash(else echo \"Need to install\")",
+      "Bash(fi)",
+      "Bash(net start:*)",
+      "Bash(npm run dev:*)",
+      "Bash(cat:*)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

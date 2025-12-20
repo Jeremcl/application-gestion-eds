@@ -4,7 +4,10 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
+import ClientDetail from './pages/ClientDetail';
+import DeviceDetail from './pages/DeviceDetail';
 import Interventions from './pages/Interventions';
+import InterventionDetail from './pages/InterventionDetail';
 import Stock from './pages/Stock';
 import Facturation from './pages/Facturation';
 import './styles/index.css';
@@ -46,11 +49,41 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/clients/:clientId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ClientDetail />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients/:clientId/appareils/:appareilId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <DeviceDetail />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/interventions"
         element={
           <ProtectedRoute>
             <Layout>
               <Interventions />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/interventions/:interventionId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <InterventionDetail />
             </Layout>
           </ProtectedRoute>
         }

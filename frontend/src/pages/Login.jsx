@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { maintenance } from '../services/api';
 import logoEDS from '../assets/Logo-eds-vert.svg';
 
 const Login = () => {
@@ -9,8 +10,22 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [maintenanceStatus, setMaintenanceStatus] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    checkMaintenance();
+  }, []);
+
+  const checkMaintenance = async () => {
+    try {
+      const { data } = await maintenance.getStatus();
+      setMaintenanceStatus(data);
+    } catch (error) {
+      console.error('Erreur vérification maintenance:', error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +39,23 @@ const Login = () => {
     } else {
       setError(result.message);
       setLoading(false);
+      // Recharger le statut de maintenance si erreur 503
+      if (result.maintenance) {
+        setMaintenanceStatus(result.maintenance);
+      }
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -96,6 +127,32 @@ const Login = () => {
           }}>
             Connexion
           </h2>
+
+          {/* Message de maintenance */}
+          {maintenanceStatus?.isActive && (
+            <div style={{
+              padding: 'var(--space-4)',
+              marginBottom: 'var(--space-4)',
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid var(--amber-500)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--amber-700)',
+              fontSize: '0.875rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                <AlertCircle size={18} />
+                <strong>Mode maintenance activé</strong>
+              </div>
+              <div style={{ marginLeft: '26px' }}>
+                {maintenanceStatus.message || 'L\'application est actuellement en maintenance.'}
+                {maintenanceStatus.endDate && (
+                  <div style={{ marginTop: 'var(--space-2)', fontSize: '0.8125rem' }}>
+                    Maintenance jusqu'au : <strong>{formatDate(maintenanceStatus.endDate)}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {error && (
             <div style={{

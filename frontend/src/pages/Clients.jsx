@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Monitor, X } from 'lucide-react';
 import { clients as clientsAPI } from '../services/api';
 
 const Clients = () => {
+  const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,7 +20,8 @@ const Clients = () => {
     ville: '',
     telephone: '',
     email: '',
-    notes: ''
+    notes: '',
+    appareils: []
   });
 
   useEffect(() => {
@@ -72,7 +75,8 @@ const Clients = () => {
       ville: client.ville || '',
       telephone: client.telephone,
       email: client.email || '',
-      notes: client.notes || ''
+      notes: client.notes || '',
+      appareils: client.appareils || []
     });
     setShowModal(true);
   };
@@ -97,7 +101,8 @@ const Clients = () => {
       ville: '',
       telephone: '',
       email: '',
-      notes: ''
+      notes: '',
+      appareils: []
     });
     setEditingClient(null);
   };
@@ -105,6 +110,32 @@ const Clients = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     resetForm();
+  };
+
+  const handleAddAppareil = () => {
+    setFormData({
+      ...formData,
+      appareils: [
+        ...formData.appareils,
+        { type: '', marque: '', modele: '', numeroSerie: '' }
+      ]
+    });
+  };
+
+  const handleRemoveAppareil = (index) => {
+    setFormData({
+      ...formData,
+      appareils: formData.appareils.filter((_, i) => i !== index)
+    });
+  };
+
+  const handleAppareilChange = (index, field, value) => {
+    const updatedAppareils = [...formData.appareils];
+    updatedAppareils[index][field] = value;
+    setFormData({
+      ...formData,
+      appareils: updatedAppareils
+    });
   };
 
   return (
@@ -165,7 +196,11 @@ const Clients = () => {
             </thead>
             <tbody>
               {clients.map((client) => (
-                <tr key={client._id}>
+                <tr
+                  key={client._id}
+                  onClick={() => navigate(`/clients/${client._id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <td>
                     <div style={{ fontWeight: 600 }}>
                       {client.nom} {client.prenom}
@@ -208,12 +243,12 @@ const Clients = () => {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button className="btn-icon" onClick={() => handleEdit(client)}>
+                      <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleEdit(client); }}>
                         <Edit size={16} />
                       </button>
                       <button
                         className="btn-icon"
-                        onClick={() => handleDelete(client._id)}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(client._id); }}
                         style={{ color: 'var(--red-500)' }}
                       >
                         <Trash2 size={16} />
@@ -367,6 +402,112 @@ const Clients = () => {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
                 />
+              </div>
+
+              {/* Section Appareils */}
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Appareils</label>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleAddAppareil}
+                    style={{ fontSize: '0.875rem', padding: 'var(--space-2) var(--space-3)' }}
+                  >
+                    <Monitor size={14} style={{ marginRight: '4px' }} />
+                    Ajouter un appareil
+                  </button>
+                </div>
+
+                {formData.appareils.length === 0 ? (
+                  <div style={{
+                    padding: 'var(--space-4)',
+                    textAlign: 'center',
+                    color: 'var(--neutral-400)',
+                    border: '1px dashed var(--neutral-300)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.875rem'
+                  }}>
+                    Aucun appareil ajouté
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    {formData.appareils.map((appareil, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          padding: 'var(--space-4)',
+                          border: '1px solid var(--neutral-300)',
+                          borderRadius: 'var(--radius-md)',
+                          position: 'relative'
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAppareil(index)}
+                          style={{
+                            position: 'absolute',
+                            top: 'var(--space-2)',
+                            right: 'var(--space-2)',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--red-500)',
+                            padding: 'var(--space-1)'
+                          }}
+                        >
+                          <X size={18} />
+                        </button>
+
+                        <div className="grid grid-2 mb-3">
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.875rem' }}>Type</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={appareil.type}
+                              onChange={(e) => handleAppareilChange(index, 'type', e.target.value)}
+                              placeholder="Ex: PC Portable, Smartphone..."
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.875rem' }}>Marque</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={appareil.marque}
+                              onChange={(e) => handleAppareilChange(index, 'marque', e.target.value)}
+                              placeholder="Ex: Apple, Samsung..."
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-2">
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.875rem' }}>Modèle</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={appareil.modele}
+                              onChange={(e) => handleAppareilChange(index, 'modele', e.target.value)}
+                              placeholder="Ex: iPhone 12, Galaxy S21..."
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label" style={{ fontSize: '0.875rem' }}>N° de série</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={appareil.numeroSerie}
+                              onChange={(e) => handleAppareilChange(index, 'numeroSerie', e.target.value)}
+                              placeholder="Ex: ABC123456..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>

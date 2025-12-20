@@ -306,8 +306,8 @@ h6 { font-size: 0.875rem; }
 
 .header-notification {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
   background: white;
   display: flex;
@@ -327,8 +327,8 @@ h6 { font-size: 0.875rem; }
 
 .notification-dot {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  right: 6px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -338,23 +338,21 @@ h6 { font-size: 0.875rem; }
 .header-user {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+  padding: 0;
   border-radius: var(--radius-full);
-  background: white;
+  background: transparent;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: var(--shadow-xs);
 }
 
 .header-user:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .user-avatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
   background: var(--gradient-primary);
   display: flex;
@@ -362,7 +360,7 @@ h6 { font-size: 0.875rem; }
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 /* ===== BREADCRUMB ===== */

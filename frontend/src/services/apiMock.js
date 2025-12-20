@@ -15,6 +15,26 @@ const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 export const auth = {
   login: async (email, password) => {
     await delay();
+    
+    // Vérifier le mode maintenance (sauf pour l'admin)
+    if (mockMaintenance.isActive && mockMaintenance.endDate && new Date() <= new Date(mockMaintenance.endDate)) {
+      const isAdmin = email === 'admin@eds22.com' && password === 'admin123';
+      if (!isAdmin) {
+        throw { 
+          response: { 
+            status: 503,
+            data: { 
+              message: mockMaintenance.message || 'L\'application est en maintenance',
+              maintenance: {
+                isActive: true,
+                endDate: mockMaintenance.endDate
+              }
+            } 
+          } 
+        };
+      }
+    }
+    
     // Admin
     if (email === 'admin@eds22.com' && password === 'admin123') {
       return { data: { token: 'mock-token-admin', user: { ...mockUser, nom: 'Administrateur EDS22', role: 'admin' } } };
@@ -90,6 +110,86 @@ export const clients = {
       return { data: { message: 'Client supprimé' } };
     }
     throw new Error('Client non trouvé');
+  },
+  getDevices: async (clientId) => {
+    await delay();
+    const client = mockClients.find(c => c._id === clientId);
+    if (!client) throw new Error('Client non trouvé');
+
+    // Compter les interventions par appareil
+    const appareilsWithCounts = (client.appareils || []).map(appareil => {
+      const count = mockInterventions.filter(i =>
+        i.clientId === clientId && i.appareilId === appareil._id
+      ).length;
+      return { ...appareil, interventionCount: count };
+    });
+
+    return { data: appareilsWithCounts };
+  },
+  getDevice: async (clientId, appareilId) => {
+    await delay();
+    const client = mockClients.find(c => c._id === clientId);
+    if (!client) throw new Error('Client non trouvé');
+
+    const appareil = (client.appareils || []).find(a => a._id === appareilId);
+    if (!appareil) throw new Error('Appareil non trouvé');
+
+    return {
+      data: {
+        appareil,
+        client: {
+          _id: client._id,
+          nom: client.nom,
+          prenom: client.prenom,
+          telephone: client.telephone,
+          email: client.email
+        }
+      }
+    };
+  },
+  updateDevice: async (clientId, appareilId, data) => {
+    await delay();
+    const client = mockClients.find(c => c._id === clientId);
+    if (!client) throw new Error('Client non trouvé');
+
+    const appareilIndex = (client.appareils || []).findIndex(a => a._id === appareilId);
+    if (appareilIndex === -1) throw new Error('Appareil non trouvé');
+
+    client.appareils[appareilIndex] = { ...client.appareils[appareilIndex], ...data };
+    return { data: client.appareils[appareilIndex] };
+  },
+  deleteDevice: async (clientId, appareilId) => {
+    await delay();
+    const client = mockClients.find(c => c._id === clientId);
+    if (!client) throw new Error('Client non trouvé');
+
+    // Vérifier s'il y a des interventions liées
+    const interventionCount = mockInterventions.filter(i => i.appareilId === appareilId).length;
+    if (interventionCount > 0) {
+      throw new Error(`Impossible de supprimer l'appareil. ${interventionCount} intervention(s) y sont liées.`);
+    }
+
+    client.appareils = (client.appareils || []).filter(a => a._id !== appareilId);
+    return { data: { message: 'Appareil supprimé' } };
+  },
+  getDeviceInterventions: async (clientId, appareilId, params) => {
+    await delay();
+    let filtered = mockInterventions.filter(i =>
+      i.clientId === clientId && i.appareilId === appareilId
+    );
+
+    if (params?.statut) {
+      filtered = filtered.filter(i => i.statut === params.statut);
+    }
+
+    return {
+      data: {
+        interventions: filtered,
+        totalPages: 1,
+        currentPage: 1,
+        total: filtered.length
+      }
+    };
   }
 };
 
@@ -306,11 +406,45 @@ export const ai = {
   }
 };
 
+// Maintenance
+let mockMaintenance = {
+  isActive: false,
+  endDate: null,
+  message: 'L\'application est actuellement en maintenance. Veuillez réessayer plus tard.'
+};
+
+export const maintenance = {
+  getStatus: async () => {
+    await delay();
+    // Vérifier si la date de fin est dépassée
+    if (mockMaintenance.isActive && mockMaintenance.endDate && new Date() > new Date(mockMaintenance.endDate)) {
+      mockMaintenance.isActive = false;
+    }
+    return { data: mockMaintenance };
+  },
+  toggle: async (data) => {
+    await delay();
+    mockMaintenance = {
+      ...mockMaintenance,
+      isActive: data.isActive,
+      endDate: data.endDate ? new Date(data.endDate).toISOString() : null,
+      message: data.message || mockMaintenance.message
+    };
+    return { 
+      data: { 
+        message: mockMaintenance.isActive ? 'Mode maintenance activé' : 'Mode maintenance désactivé',
+        maintenance: mockMaintenance
+      } 
+    };
+  }
+};
+
 export default {
   auth,
   clients,
   interventions,
   pieces,
   factures,
-  ai
+  ai,
+  maintenance
 };

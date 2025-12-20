@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Intervention = require('../models/Intervention');
+const Client = require('../models/Client');
 const authMiddleware = require('../middleware/auth');
 
 router.use(authMiddleware);
@@ -56,6 +57,22 @@ router.get('/:id', async (req, res) => {
 // POST créer une nouvelle intervention
 router.post('/', async (req, res) => {
   try {
+    // Si appareilId est fourni, synchroniser les données de l'appareil
+    if (req.body.appareilId && req.body.clientId) {
+      const client = await Client.findById(req.body.clientId);
+      if (client) {
+        const appareil = client.appareils.id(req.body.appareilId);
+        if (appareil) {
+          req.body.appareil = {
+            type: appareil.type,
+            marque: appareil.marque,
+            modele: appareil.modele,
+            numeroSerie: appareil.numeroSerie
+          };
+        }
+      }
+    }
+
     const intervention = new Intervention(req.body);
     await intervention.save();
     await intervention.populate('clientId', 'nom prenom telephone');
@@ -68,6 +85,22 @@ router.post('/', async (req, res) => {
 // PUT mettre à jour une intervention
 router.put('/:id', async (req, res) => {
   try {
+    // Si appareilId est fourni, synchroniser les données de l'appareil
+    if (req.body.appareilId && req.body.clientId) {
+      const client = await Client.findById(req.body.clientId);
+      if (client) {
+        const appareil = client.appareils.id(req.body.appareilId);
+        if (appareil) {
+          req.body.appareil = {
+            type: appareil.type,
+            marque: appareil.marque,
+            modele: appareil.modele,
+            numeroSerie: appareil.numeroSerie
+          };
+        }
+      }
+    }
+
     const intervention = await Intervention.findByIdAndUpdate(
       req.params.id,
       { ...req.body, dateModification: Date.now() },

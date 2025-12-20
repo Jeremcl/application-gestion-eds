@@ -2,10 +2,29 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Maintenance = require('../models/Maintenance');
 
 // Login
 router.post('/login', async (req, res) => {
   try {
+    // Vérifier le mode maintenance (sauf pour l'admin)
+    const maintenance = await Maintenance.getMaintenance();
+    if (maintenance.isActive && maintenance.endDate && new Date() <= maintenance.endDate) {
+      const { email } = req.body;
+      const user = await User.findOne({ email });
+      
+      // L'admin peut toujours se connecter même en maintenance
+      if (!user || user.role !== 'admin') {
+        return res.status(503).json({ 
+          message: maintenance.message || 'L\'application est en maintenance',
+          maintenance: {
+            isActive: true,
+            endDate: maintenance.endDate
+          }
+        });
+      }
+    }
+
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });

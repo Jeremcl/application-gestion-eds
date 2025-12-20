@@ -17,6 +17,7 @@ app.use('/api/interventions', require('./routes/interventions'));
 app.use('/api/pieces', require('./routes/pieces'));
 app.use('/api/factures', require('./routes/factures'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/maintenance', require('./routes/maintenance'));
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI, {

@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Plus, List, LayoutGrid } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, List, LayoutGrid, Edit, Trash2, Eye } from 'lucide-react';
 import { interventions as interventionsAPI } from '../services/api';
+import InterventionModal from '../components/InterventionModal';
 
 const Interventions = () => {
+  const navigate = useNavigate();
   const [interventions, setInterventions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // 'list' ou 'kanban'
   const [filterStatut, setFilterStatut] = useState('');
+  const [showInterventionModal, setShowInterventionModal] = useState(false);
+  const [editingIntervention, setEditingIntervention] = useState(null);
 
   const statuts = ['Demande', 'Planifié', 'En cours', 'Diagnostic', 'Réparation', 'Terminé', 'Facturé'];
 
@@ -43,6 +48,30 @@ const Interventions = () => {
     return interventions.filter(int => int.statut === statut);
   };
 
+  const handleEdit = (intervention, e) => {
+    if (e) e.stopPropagation();
+    setEditingIntervention(intervention);
+    setShowInterventionModal(true);
+  };
+
+  const handleDelete = async (interventionId, e) => {
+    if (e) e.stopPropagation();
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette intervention ?')) {
+      try {
+        await interventionsAPI.delete(interventionId);
+        loadInterventions();
+      } catch (error) {
+        console.error('Erreur suppression intervention:', error);
+        alert('Erreur lors de la suppression');
+      }
+    }
+  };
+
+  const handleView = (interventionId, e) => {
+    if (e) e.stopPropagation();
+    navigate(`/interventions/${interventionId}`);
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -67,7 +96,7 @@ const Interventions = () => {
               <LayoutGrid size={18} />
             </button>
           </div>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={() => setShowInterventionModal(true)}>
             <Plus size={18} />
             Nouvelle Intervention
           </button>
@@ -114,11 +143,16 @@ const Interventions = () => {
                     <th>Statut</th>
                     <th>Technicien</th>
                     <th>Date</th>
+                    <th style={{ width: '150px', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {interventions.map((int) => (
-                    <tr key={int._id}>
+                    <tr
+                      key={int._id}
+                      onClick={() => handleView(int._id)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <td style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
                         {int.numero}
                       </td>
@@ -146,6 +180,24 @@ const Interventions = () => {
                       </td>
                       <td style={{ fontSize: '0.875rem' }}>
                         {new Date(int.dateCreation).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          <button className="btn-icon" onClick={(e) => handleView(int._id, e)} title="Voir">
+                            <Eye size={16} />
+                          </button>
+                          <button className="btn-icon" onClick={(e) => handleEdit(int, e)} title="Modifier">
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            className="btn-icon"
+                            onClick={(e) => handleDelete(int._id, e)}
+                            style={{ color: 'var(--red-500)' }}
+                            title="Supprimer"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -226,6 +278,16 @@ const Interventions = () => {
           )}
         </>
       )}
+
+      {/* Intervention Modal */}
+      <InterventionModal
+        show={showInterventionModal}
+        onClose={() => setShowInterventionModal(false)}
+        onSuccess={() => {
+          loadInterventions();
+          setShowInterventionModal(false);
+        }}
+      />
     </div>
   );
 };

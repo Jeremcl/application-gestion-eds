@@ -19,6 +19,10 @@ const interventionSchema = new mongoose.Schema({
     ref: 'Client',
     required: true
   },
+  appareilId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: false  // Optionnel pour rétrocompatibilité
+  },
   appareil: {
     type: {
       type: String

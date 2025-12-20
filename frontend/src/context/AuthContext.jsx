@@ -27,7 +27,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Erreur de connexion'
+        message: error.response?.data?.message || 'Erreur de connexion',
+        maintenance: error.response?.data?.maintenance || null
       };
     }
   };
