@@ -1,8 +1,8 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon } from 'lucide-react';
+import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon, MonitorSmartphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
-import { pieces, maintenance as maintenanceAPI } from '../services/api';
+import { pieces, maintenance as maintenanceAPI, appareilsPret } from '../services/api';
 import logoEDS from '../assets/Logo-eds-vert.svg';
 
 const Layout = ({ children }) => {
@@ -10,6 +10,7 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [stockAlertes, setStockAlertes] = useState(0);
+  const [appareilsPretesCount, setAppareilsPretesCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [maintenanceStatus, setMaintenanceStatus] = useState(null);
@@ -17,6 +18,7 @@ const Layout = ({ children }) => {
 
   useEffect(() => {
     loadStockAlertes();
+    loadAppareilsPretesCount();
     if (user?.role === 'admin') {
       loadMaintenanceStatus();
     }
@@ -45,6 +47,15 @@ const Layout = ({ children }) => {
       setStockAlertes(data.count);
     } catch (error) {
       console.error('Erreur chargement alertes stock:', error);
+    }
+  };
+
+  const loadAppareilsPretesCount = async () => {
+    try {
+      const { data } = await appareilsPret.getStats();
+      setAppareilsPretesCount(data.pretes);
+    } catch (error) {
+      console.error('Erreur chargement count appareils prêtés:', error);
     }
   };
 
@@ -77,6 +88,7 @@ const Layout = ({ children }) => {
     { path: '/clients', icon: Users, label: 'Clients' },
     { path: '/interventions', icon: Wrench, label: 'Interventions' },
     { path: '/stock', icon: Package, label: 'Stock', badge: stockAlertes },
+    { path: '/appareils-pret', icon: MonitorSmartphone, label: 'Appareils de prêt', badge: appareilsPretesCount },
     { path: '/facturation', icon: FileText, label: 'Facturation' },
     { path: '/parametres', icon: Settings, label: 'Paramètres' }
   ];

@@ -10,6 +10,8 @@ import Interventions from './pages/Interventions';
 import InterventionDetail from './pages/InterventionDetail';
 import Stock from './pages/Stock';
 import Facturation from './pages/Facturation';
+import AppareilsPret from './pages/AppareilsPret';
+import AppareilPretDetail from './pages/AppareilPretDetail';
 import './styles/index.css';
 
 // Protected Route Component
@@ -94,6 +96,26 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Layout>
               <Stock />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/appareils-pret"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AppareilsPret />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/appareils-pret/:appareilId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AppareilPretDetail />
             </Layout>
           </ProtectedRoute>
         }

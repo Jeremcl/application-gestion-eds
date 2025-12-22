@@ -5,7 +5,9 @@ import {
   mockInterventions,
   mockPieces,
   mockFactures,
-  mockStats
+  mockStats,
+  mockAppareilsPret,
+  mockPrets
 } from './mockData';
 
 // Simuler un délai réseau
@@ -407,8 +409,9 @@ export const ai = {
 };
 
 // Maintenance
+// Pour réinitialiser le mode maintenance, changez isActive à false
 let mockMaintenance = {
-  isActive: false,
+  isActive: false, // Mettre à false si vous n'avez plus accès
   endDate: null,
   message: 'L\'application est actuellement en maintenance. Veuillez réessayer plus tard.'
 };
@@ -439,6 +442,213 @@ export const maintenance = {
   }
 };
 
+// Appareils de Prêt
+export const appareilsPret = {
+  getAll: async (params) => {
+    await delay();
+    let filtered = [...mockAppareilsPret];
+    if (params?.statut) {
+      filtered = filtered.filter(a => a.statut === params.statut);
+    }
+    if (params?.search) {
+      const search = params.search.toLowerCase();
+      filtered = filtered.filter(a =>
+        a.type.toLowerCase().includes(search) ||
+        a.marque.toLowerCase().includes(search) ||
+        a.modele.toLowerCase().includes(search) ||
+        a.numeroSerie?.toLowerCase().includes(search)
+      );
+    }
+    return {
+      data: {
+        appareils: filtered,
+        totalPages: 1,
+        currentPage: 1,
+        total: filtered.length
+      }
+    };
+  },
+
+  getStats: async () => {
+    await delay();
+    const total = mockAppareilsPret.length;
+    const disponibles = mockAppareilsPret.filter(a => a.statut === 'Disponible').length;
+    const pretes = mockAppareilsPret.filter(a => a.statut === 'Prêté').length;
+    const enMaintenance = mockAppareilsPret.filter(a => a.statut === 'En maintenance').length;
+    const valeurTotale = mockAppareilsPret.reduce((sum, a) => sum + (a.valeur || 0), 0);
+
+    return {
+      data: {
+        total,
+        disponibles,
+        pretes,
+        enMaintenance,
+        valeurTotale
+      }
+    };
+  },
+
+  getDisponibles: async () => {
+    await delay();
+    return {
+      data: mockAppareilsPret.filter(a => a.statut === 'Disponible')
+    };
+  },
+
+  getById: async (id) => {
+    await delay();
+    const appareil = mockAppareilsPret.find(a => a._id === id);
+    return { data: appareil };
+  },
+
+  create: async (data) => {
+    await delay();
+    const newAppareil = {
+      _id: 'ap' + Date.now(),
+      ...data,
+      dateCreation: new Date(),
+      dateModification: new Date()
+    };
+    mockAppareilsPret.push(newAppareil);
+    return { data: newAppareil };
+  },
+
+  update: async (id, data) => {
+    await delay();
+    const index = mockAppareilsPret.findIndex(a => a._id === id);
+    if (index !== -1) {
+      mockAppareilsPret[index] = {
+        ...mockAppareilsPret[index],
+        ...data,
+        dateModification: new Date()
+      };
+      return { data: mockAppareilsPret[index] };
+    }
+    throw new Error('Appareil non trouvé');
+  },
+
+  delete: async (id) => {
+    await delay();
+    // Vérifier si prêté
+    const pretActif = mockPrets.find(p => p.appareilPretId === id && p.statut === 'En cours');
+    if (pretActif) {
+      throw new Error('Impossible de supprimer un appareil actuellement prêté');
+    }
+    const index = mockAppareilsPret.findIndex(a => a._id === id);
+    if (index !== -1) {
+      mockAppareilsPret.splice(index, 1);
+      return { data: { message: 'Appareil supprimé' } };
+    }
+    throw new Error('Appareil non trouvé');
+  },
+
+  getPrets: async (id) => {
+    await delay();
+    const prets = mockPrets.filter(p => p.appareilPretId === id);
+    // Populate client et intervention
+    const populated = prets.map(p => ({
+      ...p,
+      clientId: mockClients.find(c => c._id === p.clientId),
+      interventionId: mockInterventions.find(i => i._id === p.interventionId),
+      appareilPretId: mockAppareilsPret.find(a => a._id === p.appareilPretId)
+    }));
+    return { data: populated };
+  }
+};
+
+// Prêts
+export const prets = {
+  create: async (data) => {
+    await delay();
+    const appareil = mockAppareilsPret.find(a => a._id === data.appareilPretId);
+    if (!appareil) {
+      throw new Error('Appareil non trouvé');
+    }
+    if (appareil.statut !== 'Disponible') {
+      throw new Error('Appareil non disponible');
+    }
+
+    const newPret = {
+      _id: 'pr' + Date.now(),
+      ...data,
+      datePret: new Date(),
+      statut: 'En cours',
+      etatDepart: appareil.etat
+    };
+    mockPrets.push(newPret);
+
+    // Mettre à jour le statut de l'appareil
+    const appareilIndex = mockAppareilsPret.findIndex(a => a._id === data.appareilPretId);
+    if (appareilIndex !== -1) {
+      mockAppareilsPret[appareilIndex].statut = 'Prêté';
+    }
+
+    // Populate pour le retour
+    return {
+      data: {
+        ...newPret,
+        clientId: mockClients.find(c => c._id === data.clientId),
+        interventionId: data.interventionId ? mockInterventions.find(i => i._id === data.interventionId) : null,
+        appareilPretId: appareil
+      }
+    };
+  },
+
+  retour: async (id, data) => {
+    await delay();
+    const pretIndex = mockPrets.findIndex(p => p._id === id);
+    if (pretIndex === -1) {
+      throw new Error('Prêt non trouvé');
+    }
+
+    mockPrets[pretIndex].dateRetourEffectif = new Date();
+    mockPrets[pretIndex].etatRetour = data.etatRetour || mockPrets[pretIndex].etatDepart;
+    mockPrets[pretIndex].statut = 'Retourné';
+    if (data.notes) mockPrets[pretIndex].notes = data.notes;
+
+    // Libérer l'appareil
+    const appareilIndex = mockAppareilsPret.findIndex(a => a._id === mockPrets[pretIndex].appareilPretId);
+    if (appareilIndex !== -1) {
+      mockAppareilsPret[appareilIndex].statut = 'Disponible';
+      mockAppareilsPret[appareilIndex].etat = data.etatRetour || mockAppareilsPret[appareilIndex].etat;
+    }
+
+    // Populate pour le retour
+    return {
+      data: {
+        ...mockPrets[pretIndex],
+        clientId: mockClients.find(c => c._id === mockPrets[pretIndex].clientId),
+        interventionId: mockPrets[pretIndex].interventionId ? mockInterventions.find(i => i._id === mockPrets[pretIndex].interventionId) : null,
+        appareilPretId: mockAppareilsPret[appareilIndex]
+      }
+    };
+  },
+
+  getAll: async (params) => {
+    await delay();
+    let filtered = [...mockPrets];
+    if (params?.statut) {
+      filtered = filtered.filter(p => p.statut === params.statut);
+    }
+    if (params?.clientId) {
+      filtered = filtered.filter(p => p.clientId === params.clientId);
+    }
+    if (params?.appareilPretId) {
+      filtered = filtered.filter(p => p.appareilPretId === params.appareilPretId);
+    }
+
+    // Populate
+    const populated = filtered.map(p => ({
+      ...p,
+      clientId: mockClients.find(c => c._id === p.clientId),
+      interventionId: p.interventionId ? mockInterventions.find(i => i._id === p.interventionId) : null,
+      appareilPretId: mockAppareilsPret.find(a => a._id === p.appareilPretId)
+    }));
+
+    return { data: populated };
+  }
+};
+
 export default {
   auth,
   clients,
@@ -446,5 +656,7 @@ export default {
   pieces,
   factures,
   ai,
-  maintenance
+  maintenance,
+  appareilsPret,
+  prets
 };

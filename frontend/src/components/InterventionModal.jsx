@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { clients as clientsAPI, interventions as interventionsAPI } from '../services/api';
+import { clients as clientsAPI, interventions as interventionsAPI, appareilsPret as appareilsPretAPI } from '../services/api';
 
 const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editingIntervention = null }) => {
   const [clients, setClients] = useState([]);
   const [clientDevices, setClientDevices] = useState([]);
+  const [appareilsDisponibles, setAppareilsDisponibles] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     clientId: prefilledData.clientId || '',
     appareilId: prefilledData.appareilId || '',
     appareil: prefilledData.appareil || { type: '', marque: '', modele: '', numeroSerie: '' },
+    appareilPretId: '',
     description: '',
     statut: 'Demande',
     typeIntervention: 'Atelier',
@@ -29,6 +31,7 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
   useEffect(() => {
     if (show) {
       loadClients();
+      loadAppareilsDisponibles();
 
       // Si on est en mode édition, charger les données
       if (editingIntervention) {
@@ -37,6 +40,7 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
           clientId: clientId,
           appareilId: editingIntervention.appareilId || '',
           appareil: editingIntervention.appareil || { type: '', marque: '', modele: '', numeroSerie: '' },
+          appareilPretId: editingIntervention.appareilPretId || '',
           description: editingIntervention.description || '',
           statut: editingIntervention.statut || 'Demande',
           typeIntervention: editingIntervention.typeIntervention || 'Atelier',
@@ -83,6 +87,16 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
     }
   };
 
+  const loadAppareilsDisponibles = async () => {
+    try {
+      const { data } = await appareilsPretAPI.getDisponibles();
+      setAppareilsDisponibles(data);
+    } catch (error) {
+      console.error('Erreur chargement appareils disponibles:', error);
+      setAppareilsDisponibles([]);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -107,6 +121,7 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
       clientId: '',
       appareilId: '',
       appareil: { type: '', marque: '', modele: '', numeroSerie: '' },
+      appareilPretId: '',
       description: '',
       statut: 'Demande',
       typeIntervention: 'Atelier',
@@ -151,7 +166,9 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
         width: '100%',
         maxWidth: '700px',
         maxHeight: '90vh',
-        overflowY: 'auto'
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        paddingRight: 'calc(var(--space-6) + 8px)'
       }}>
         <div style={{
           display: 'flex',
@@ -290,6 +307,27 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
               )}
             </div>
           )}
+
+          {/* Appareil de prêt */}
+          <div className="form-group">
+            <label className="form-label">Appareil de prêt (optionnel)</label>
+            <select
+              className="form-input"
+              value={formData.appareilPretId}
+              onChange={(e) => setFormData({ ...formData, appareilPretId: e.target.value })}
+            >
+              <option value="">Aucun appareil de prêt</option>
+              {appareilsDisponibles.map(appareil => (
+                <option key={appareil._id} value={appareil._id}>
+                  {appareil.type} - {appareil.marque} {appareil.modele}
+                  {appareil.numeroSerie && ` (${appareil.numeroSerie})`}
+                </option>
+              ))}
+            </select>
+            <div style={{ fontSize: '0.75rem', color: 'var(--neutral-600)', marginTop: 'var(--space-1)' }}>
+              Prêtez un appareil au client pendant la réparation
+            </div>
+          </div>
 
           {/* Description */}
           <div className="form-group">

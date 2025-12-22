@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Wrench, User, Monitor, Calendar, Clock, Euro,
-  FileText, Package, Edit, Trash2, CheckCircle, XCircle
+  FileText, Package, Edit, Trash2, CheckCircle, XCircle, MonitorSmartphone, ChevronRight
 } from 'lucide-react';
 import { interventions as interventionsAPI } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
@@ -246,6 +246,65 @@ const InterventionDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Appareil de prêt */}
+      {intervention.appareilPretId && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 'var(--space-6)',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            background: 'linear-gradient(135deg, var(--amber-50), var(--orange-50))',
+            border: '2px solid var(--amber-200)'
+          }}
+          onClick={() => navigate(`/appareils-pret/${intervention.appareilPretId._id || intervention.appareilPretId}`)}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.2)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: 'var(--radius-lg)',
+                background: 'linear-gradient(135deg, var(--amber-100), var(--orange-100))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <MonitorSmartphone size={24} style={{ color: 'var(--amber-700)' }} />
+              </div>
+              <div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--amber-700)',
+                  marginBottom: '2px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Appareil de prêt
+                </div>
+                <div style={{ fontWeight: 600, fontSize: '1.125rem', color: 'var(--neutral-900)' }}>
+                  {intervention.appareilPretId.type} {intervention.appareilPretId.marque}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--neutral-600)', marginTop: '2px' }}>
+                  {intervention.appareilPretId.modele}
+                  {intervention.appareilPretId.numeroSerie && ` • N° ${intervention.appareilPretId.numeroSerie}`}
+                </div>
+              </div>
+            </div>
+            <ChevronRight size={24} style={{ color: 'var(--amber-600)' }} />
+          </div>
+        </div>
+      )}
 
       {/* Description & Details */}
       <div className="grid grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>

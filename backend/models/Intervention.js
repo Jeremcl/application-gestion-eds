@@ -31,6 +31,11 @@ const interventionSchema = new mongoose.Schema({
     modele: String,
     numeroSerie: String
   },
+  appareilPretId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'AppareilPret',
+    required: false
+  },
   description: String,
   statut: {
     type: String,

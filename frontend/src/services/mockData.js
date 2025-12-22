@@ -166,3 +166,65 @@ export const mockStats = {
     { _id: 'Facturé', count: 6 }
   ]
 };
+
+export const mockAppareilsPret = [
+  {
+    _id: 'ap1',
+    type: 'PC Portable',
+    marque: 'HP',
+    modele: 'EliteBook 840 G6',
+    numeroSerie: 'HP123456',
+    statut: 'Disponible',
+    etat: 'Bon',
+    valeur: 450,
+    dateAchat: new Date('2023-05-15'),
+    emplacement: 'Étagère A3',
+    accessoiresInclus: ['Chargeur', 'Souris'],
+    conditionsPret: 'Retour sous 15 jours maximum',
+    notes: 'Appareil de prêt pour clients professionnels'
+  },
+  {
+    _id: 'ap2',
+    type: 'Smartphone',
+    marque: 'Samsung',
+    modele: 'Galaxy A52',
+    numeroSerie: 'SAM789012',
+    statut: 'Prêté',
+    etat: 'Neuf',
+    valeur: 300,
+    dateAchat: new Date('2024-01-10'),
+    emplacement: 'Tiroir B1',
+    accessoiresInclus: ['Chargeur', 'Cable USB-C', 'Écouteurs'],
+    conditionsPret: 'Avec coque de protection',
+    notes: 'Smartphone de prêt standard'
+  },
+  {
+    _id: 'ap3',
+    type: 'Tablette',
+    marque: 'Apple',
+    modele: 'iPad Air',
+    numeroSerie: 'IPAD345678',
+    statut: 'Disponible',
+    etat: 'Neuf',
+    valeur: 550,
+    dateAchat: new Date('2024-02-20'),
+    emplacement: 'Armoire C2',
+    accessoiresInclus: ['Chargeur', 'Cable Lightning', 'Stylet'],
+    conditionsPret: 'Manipulation avec précaution',
+    notes: 'Tablette haut de gamme - prêt limité'
+  }
+];
+
+export const mockPrets = [
+  {
+    _id: 'pr1',
+    appareilPretId: 'ap2',
+    clientId: '1',
+    interventionId: '1',
+    datePret: new Date('2025-01-15'),
+    dateRetourPrevue: new Date('2025-01-30'),
+    statut: 'En cours',
+    etatDepart: 'Neuf',
+    notes: 'Prêt pendant réparation du lave-linge'
+  }
+];

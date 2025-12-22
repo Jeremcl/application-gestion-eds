@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Phone, Mail, MapPin, Plus, Edit, Monitor, X, Wrench } from 'lucide-react';
+import { Phone, Mail, MapPin, Plus, Edit, Monitor, X, Wrench, MonitorSmartphone } from 'lucide-react';
 import { clients as clientsAPI } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import DeviceCard from '../components/DeviceCard';
 import InterventionModal from '../components/InterventionModal';
+import PretModal from '../components/PretModal';
 
 const ClientDetail = () => {
   const { clientId } = useParams();
@@ -14,6 +15,7 @@ const ClientDetail = () => {
   const [loading, setLoading] = useState(true);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [showInterventionModal, setShowInterventionModal] = useState(false);
+  const [showPretModal, setShowPretModal] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
   const [deviceFormData, setDeviceFormData] = useState({
     type: '',
@@ -153,6 +155,13 @@ const ClientDetail = () => {
             >
               <Wrench size={18} />
               Nouvelle intervention
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPretModal(true)}
+            >
+              <MonitorSmartphone size={18} />
+              Prêter un appareil
             </button>
             <button
               className="btn btn-secondary"
@@ -341,6 +350,19 @@ const ClientDetail = () => {
         onSuccess={() => {
           loadClientData();
           setShowInterventionModal(false);
+        }}
+        prefilledData={{
+          clientId: clientId
+        }}
+      />
+
+      {/* Pret Modal */}
+      <PretModal
+        show={showPretModal}
+        onClose={() => setShowPretModal(false)}
+        onSuccess={() => {
+          loadClientData();
+          setShowPretModal(false);
         }}
         prefilledData={{
           clientId: clientId
