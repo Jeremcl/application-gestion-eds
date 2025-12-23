@@ -96,7 +96,7 @@ const Facturation = () => {
       )}
 
       {/* Stats rapides */}
-      <div className="grid grid-3 mt-6">
+      <div className="grid grid-3" style={{ marginTop: 'var(--space-12)' }}>
         <div className="card">
           <div style={{ fontSize: '0.875rem', color: 'var(--neutral-600)', marginBottom: 'var(--space-2)' }}>
             Total Factures

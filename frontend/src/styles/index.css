@@ -386,6 +386,12 @@ h6 { font-size: 0.875rem; }
 /* ===== PAGE HEADER ===== */
 .page-header {
   margin-bottom: var(--space-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+  margin-top: var(--space-2);
 }
 
 .page-title {

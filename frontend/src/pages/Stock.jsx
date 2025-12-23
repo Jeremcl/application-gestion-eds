@@ -190,7 +190,7 @@ const Stock = () => {
       )}
 
       {/* Stats rapides */}
-      <div className="grid grid-3 mt-6">
+      <div className="grid grid-3" style={{ marginTop: 'var(--space-12)' }}>
         <div className="metric-card">
           <div className="metric-icon" style={{ background: 'var(--gradient-primary)' }}>
             <Package size={28} />

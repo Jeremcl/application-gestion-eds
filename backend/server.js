@@ -20,6 +20,7 @@ app.use('/api/ai', require('./routes/ai'));
 app.use('/api/maintenance', require('./routes/maintenance'));
 app.use('/api/appareils-pret', require('./routes/appareilsPret'));
 app.use('/api/prets', require('./routes/prets'));
+app.use('/api/fiches-internes', require('./routes/fichesInternes'));
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI, {

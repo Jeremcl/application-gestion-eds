@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MonitorSmartphone, Plus, Search } from 'lucide-react';
+import { MonitorSmartphone, Plus, Search, DollarSign } from 'lucide-react';
 import { appareilsPret as appareilsPretAPI } from '../services/api';
 import AppareilPretCard from '../components/AppareilPretCard';
 import AppareilPretModal from '../components/AppareilPretModal';
@@ -76,11 +76,10 @@ const AppareilsPret = () => {
   return (
     <div>
       {/* Header */}
-      <div style={{
+      <div className="page-header" style={{
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 'var(--space-8)'
+        alignItems: 'flex-start'
       }}>
         <div>
           <h1 className="page-title">Appareils de prêt</h1>
@@ -132,7 +131,7 @@ const AppareilsPret = () => {
 
         <div className="metric-card" style={{ borderColor: 'var(--primary-500)' }}>
           <div className="metric-icon">
-            <span style={{ fontSize: '1.5rem' }}>💰</span>
+            <DollarSign size={32} />
           </div>
           <div className="metric-content">
             <div className="metric-label">Valeur totale</div>

@@ -649,6 +649,110 @@ export const prets = {
   }
 };
 
+// Fiches Internes
+let mockFichesInternes = [];
+
+export const fichesInternes = {
+  getAll: async (params) => {
+    await delay();
+    let filtered = [...mockFichesInternes];
+    if (params?.type) {
+      filtered = filtered.filter(f => f.type === params.type);
+    }
+    return {
+      data: {
+        fiches: filtered,
+        totalPages: 1,
+        currentPage: 1,
+        total: filtered.length
+      }
+    };
+  },
+
+  getById: async (id) => {
+    await delay();
+    const fiche = mockFichesInternes.find(f => f._id === id);
+    if (!fiche) throw new Error('Fiche non trouvée');
+    return { data: fiche };
+  },
+
+  generer: async (payload) => {
+    await delay(500);
+    const { type, data, clientId, appareilPretId } = payload;
+
+    // Générer un numéro de fiche
+    const count = mockFichesInternes.filter(f => f.type === type).length;
+    const prefix = type.replace('.', '');
+    const numero = `${prefix}-${String(count + 1).padStart(6, '0')}`;
+
+    const newFiche = {
+      _id: 'fiche' + Date.now(),
+      type,
+      numero,
+      data,
+      clientId,
+      appareilPretId,
+      dateGeneration: new Date(),
+      generePar: mockUser._id
+    };
+
+    mockFichesInternes.push(newFiche);
+
+    // Simuler le téléchargement d'un PDF
+    // En production, cette fonction retournerait un blob PDF
+    return {
+      data: newFiche,
+      pdfUrl: `mock-pdf-${numero}.pdf`
+    };
+  },
+
+  preview: async (id) => {
+    await delay(300);
+    const fiche = mockFichesInternes.find(f => f._id === id);
+    if (!fiche) throw new Error('Fiche non trouvée');
+
+    // En mode mock, on retourne juste l'URL de l'API qui servira le PDF
+    // En production, cela pointera vers l'API réelle
+    return {
+      data: fiche,
+      previewUrl: `/api/fiches-internes/${id}/preview`
+    };
+  },
+
+  regenerer: async (id) => {
+    await delay(500);
+    const fiche = mockFichesInternes.find(f => f._id === id);
+    if (!fiche) throw new Error('Fiche non trouvée');
+
+    // Simuler la régénération du PDF
+    return {
+      data: fiche,
+      pdfUrl: `mock-pdf-${fiche.numero}.pdf`
+    };
+  },
+
+  delete: async (id) => {
+    await delay();
+    const index = mockFichesInternes.findIndex(f => f._id === id);
+    if (index !== -1) {
+      mockFichesInternes.splice(index, 1);
+      return { data: { message: 'Fiche supprimée' } };
+    }
+    throw new Error('Fiche non trouvée');
+  },
+
+  getStats: async () => {
+    await delay();
+    const stats = {
+      'DA1.1': mockFichesInternes.filter(f => f.type === 'DA1.1').length,
+      'AEA1.1': mockFichesInternes.filter(f => f.type === 'AEA1.1').length,
+      'AP1.1': mockFichesInternes.filter(f => f.type === 'AP1.1').length,
+      total: mockFichesInternes.length
+    };
+    return { data: stats };
+  }
+};
+
 export default {
   auth,
   clients,
@@ -658,5 +762,6 @@ export default {
   ai,
   maintenance,
   appareilsPret,
-  prets
+  prets,
+  fichesInternes
 };

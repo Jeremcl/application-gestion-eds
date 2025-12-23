@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon, MonitorSmartphone } from 'lucide-react';
+import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon, MonitorSmartphone, FileStack } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { pieces, maintenance as maintenanceAPI, appareilsPret } from '../services/api';
@@ -90,6 +90,7 @@ const Layout = ({ children }) => {
     { path: '/stock', icon: Package, label: 'Stock', badge: stockAlertes },
     { path: '/appareils-pret', icon: MonitorSmartphone, label: 'Appareils de prêt', badge: appareilsPretesCount },
     { path: '/facturation', icon: FileText, label: 'Facturation' },
+    { path: '/fiches-internes', icon: FileStack, label: 'Fiches Internes' },
     { path: '/parametres', icon: Settings, label: 'Paramètres' }
   ];
 

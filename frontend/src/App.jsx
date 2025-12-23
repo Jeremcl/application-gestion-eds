@@ -12,6 +12,7 @@ import Stock from './pages/Stock';
 import Facturation from './pages/Facturation';
 import AppareilsPret from './pages/AppareilsPret';
 import AppareilPretDetail from './pages/AppareilPretDetail';
+import FichesInternes from './pages/FichesInternes';
 import './styles/index.css';
 
 // Protected Route Component
@@ -126,6 +127,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Layout>
               <Facturation />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/fiches-internes"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <FichesInternes />
             </Layout>
           </ProtectedRoute>
         }

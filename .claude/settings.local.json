@@ -14,7 +14,12 @@
       "Bash(timeout /t 3 /nobreak)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(dir /b \"c:\\\\Users\\\\jerem\\\\OneDrive - Stéphane JEGOU\\\\Bureau\\\\Application gestion eds\\\\frontend\\\\src\\\\pages\")",
+      "Bash(dir /b \"c:\\\\Users\\\\jerem\\\\OneDrive - Stéphane JEGOU\\\\Bureau\\\\Application gestion eds\\\\backend\\\\routes\")",
+      "Bash(npm install:*)",
+      "Bash(copy:*)",
+      "Bash(node -e:*)"
     ]
   }
 }
