@@ -42,12 +42,24 @@ router.get('/', async (req, res) => {
 // GET un client par ID
 router.get('/:id', async (req, res) => {
   try {
+    console.log('📋 Récupération client avec ID:', req.params.id);
+
+    // Vérifier si l'ID est un ObjectId valide
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      console.log('❌ ID invalide (pas un ObjectId):', req.params.id);
+      return res.status(400).json({ message: 'ID client invalide' });
+    }
+
     const client = await Client.findById(req.params.id);
     if (!client) {
+      console.log('❌ Client non trouvé avec ID:', req.params.id);
       return res.status(404).json({ message: 'Client non trouvé' });
     }
+
+    console.log('✅ Client trouvé:', client.nom, client.prenom);
     res.json(client);
   } catch (error) {
+    console.error('💥 Erreur lors de la récupération du client:', error);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 });

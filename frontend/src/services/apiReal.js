@@ -97,6 +97,23 @@ export const clients = {
   getInterventions: async (id) => {
     const response = await api.get(`/api/clients/${id}/interventions`);
     return response;
+  },
+  // Alias pour compatibilité avec le frontend
+  getDevices: async (clientId) => {
+    const response = await api.get(`/api/clients/${clientId}/appareils`);
+    return response;
+  },
+  getDevice: async (clientId, appareilId) => {
+    const response = await api.get(`/api/clients/${clientId}/appareils/${appareilId}`);
+    return response;
+  },
+  updateDevice: async (clientId, appareilId, data) => {
+    const response = await api.put(`/api/clients/${clientId}/appareils/${appareilId}`, data);
+    return response;
+  },
+  deleteDevice: async (clientId, appareilId) => {
+    const response = await api.delete(`/api/clients/${clientId}/appareils/${appareilId}`);
+    return response;
   }
 };
 
