@@ -23,10 +23,7 @@ app.use('/api/prets', require('./routes/prets'));
 app.use('/api/fiches-internes', require('./routes/fichesInternes'));
 
 // Connexion MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect(process.env.MONGODB_URI)
 .then(() => console.log('✅ MongoDB connecté'))
 .catch(err => console.error('❌ Erreur MongoDB:', err));
 
@@ -37,7 +34,7 @@ app.get('/api/health', (req, res) => {
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Serveur EDS22 démarré sur le port ${PORT}`);
 });
 
