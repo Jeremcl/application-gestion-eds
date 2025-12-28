@@ -1,3 +1,5 @@
-// MODE DEMO : Utilise l'API mockée (pas besoin de backend)
-// Pour utiliser le vrai backend, changez cette ligne à false
-export * from './apiMock';
+// MODE PRODUCTION : Utilise la vraie API backend
+export * from './apiReal';
+
+// MODE DEMO : Pour utiliser les données mockées, décommentez la ligne ci-dessous
+// export * from './apiMock';

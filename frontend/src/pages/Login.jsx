@@ -213,19 +213,6 @@ const Login = () => {
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
-
-          <div style={{
-            marginTop: 'var(--space-6)',
-            padding: 'var(--space-4)',
-            background: 'var(--primary-50)',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '0.75rem',
-            color: 'var(--neutral-600)'
-          }}>
-            <strong>Identifiants de test :</strong><br />
-            Email: admin@eds22.com<br />
-            Mot de passe: admin123
-          </div>
         </div>
       </div>
     </div>
