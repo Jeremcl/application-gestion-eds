@@ -3,6 +3,14 @@ import axios from 'axios';
 // Configuration de l'URL de base de l'API
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
+// Debug: Log de l'URL utilisée
+console.log('🔧 API Configuration:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  API_URL: API_URL,
+  MODE: import.meta.env.MODE,
+  timestamp: new Date().toISOString()
+});
+
 // Instance axios avec configuration
 const api = axios.create({
   baseURL: API_URL,
