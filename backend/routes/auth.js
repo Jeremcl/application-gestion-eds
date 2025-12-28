@@ -7,25 +7,29 @@ const Maintenance = require('../models/Maintenance');
 // Login
 router.post('/login', async (req, res) => {
   try {
-    // Vérifier le mode maintenance (sauf pour l'admin)
-    const maintenance = await Maintenance.getMaintenance();
-    if (maintenance.isActive && maintenance.endDate && new Date() <= maintenance.endDate) {
-      const { email } = req.body;
-      const user = await User.findOne({ email });
-      
-      // L'admin peut toujours se connecter même en maintenance
-      if (!user || user.role !== 'admin') {
-        return res.status(503).json({ 
-          message: maintenance.message || 'L\'application est en maintenance',
-          maintenance: {
-            isActive: true,
-            endDate: maintenance.endDate
-          }
-        });
-      }
-    }
-
     const { email, password } = req.body;
+
+    // Vérifier le mode maintenance (sauf pour l'admin) - gérer le cas où la collection n'existe pas
+    try {
+      const maintenance = await Maintenance.getMaintenance();
+      if (maintenance && maintenance.isActive && maintenance.endDate && new Date() <= maintenance.endDate) {
+        const user = await User.findOne({ email });
+
+        // L'admin peut toujours se connecter même en maintenance
+        if (!user || user.role !== 'admin') {
+          return res.status(503).json({
+            message: maintenance.message || 'L\'application est en maintenance',
+            maintenance: {
+              isActive: true,
+              endDate: maintenance.endDate
+            }
+          });
+        }
+      }
+    } catch (maintenanceError) {
+      // Ignorer les erreurs de maintenance (collection peut ne pas exister)
+      console.log('Info: Mode maintenance non vérifié:', maintenanceError.message);
+    }
 
     const user = await User.findOne({ email });
     if (!user) {
