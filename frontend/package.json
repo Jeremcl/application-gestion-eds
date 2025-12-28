@@ -1,6 +1,6 @@
 {
   "name": "eds22-frontend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Frontend EDS22 - Application de gestion",
   "type": "module",
   "scripts": {
