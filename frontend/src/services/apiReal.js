@@ -144,7 +144,7 @@ export const interventions = {
     return response;
   },
   getStats: async () => {
-    const response = await api.get('/api/interventions/stats');
+    const response = await api.get('/api/interventions/stats/dashboard');
     return response;
   }
 };
