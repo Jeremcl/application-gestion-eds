@@ -67,22 +67,10 @@ const FichesInternes = () => {
     setShowPreviewModal(true);
 
     try {
-      // Récupérer le token d'authentification
-      const token = localStorage.getItem('token');
-
-      // Télécharger le PDF avec authentification
-      const response = await fetch(`/api/fiches-internes/${id}/preview`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors du chargement du PDF');
-      }
+      // Utiliser l'API pour télécharger le PDF
+      const { data: blob } = await fichesAPI.preview(id);
 
       // Créer un blob URL pour l'afficher dans l'iframe
-      const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       setPreviewUrl(blobUrl);
     } catch (error) {
@@ -96,8 +84,18 @@ const FichesInternes = () => {
 
   const handleDownloadFiche = async (id) => {
     try {
-      // Télécharger le PDF
-      window.open(`/api/fiches-internes/${id}/regenerer`, '_blank');
+      // Utiliser l'API pour télécharger le PDF
+      const { data: blob } = await fichesAPI.regenerer(id);
+
+      // Créer un blob URL et déclencher le téléchargement
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `fiche-${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Erreur téléchargement:', error);
       alert('Erreur lors du téléchargement');

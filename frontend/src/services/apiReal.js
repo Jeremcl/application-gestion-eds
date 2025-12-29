@@ -329,6 +329,14 @@ export const fichesInternes = {
     const response = await api.get(`/api/fiches-internes/${id}`);
     return response;
   },
+  getStats: async () => {
+    const response = await api.get('/api/fiches-internes/stats/count');
+    return response;
+  },
+  generer: async (payload) => {
+    const response = await api.post('/api/fiches-internes/generer', payload);
+    return response;
+  },
   create: async (data) => {
     const response = await api.post('/api/fiches-internes', data);
     return response;
@@ -339,6 +347,18 @@ export const fichesInternes = {
   },
   delete: async (id) => {
     const response = await api.delete(`/api/fiches-internes/${id}`);
+    return response;
+  },
+  preview: async (id) => {
+    const response = await api.get(`/api/fiches-internes/${id}/preview`, {
+      responseType: 'blob'
+    });
+    return response;
+  },
+  regenerer: async (id) => {
+    const response = await api.post(`/api/fiches-internes/${id}/regenerer`, {}, {
+      responseType: 'blob'
+    });
     return response;
   },
   updateStatut: async (id, statut) => {

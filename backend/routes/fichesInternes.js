@@ -40,6 +40,36 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET statistiques des fiches (DOIT ÊTRE AVANT /:id pour éviter conflit de route)
+router.get('/stats/count', async (req, res) => {
+  try {
+    const stats = await FicheInterne.aggregate([
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const result = {
+      'DA1.1': 0,
+      'AEA1.1': 0,
+      'AP1.1': 0,
+      total: 0
+    };
+
+    stats.forEach(stat => {
+      result[stat._id] = stat.count;
+      result.total += stat.count;
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
 // GET une fiche par ID
 router.get('/:id', async (req, res) => {
   try {
@@ -194,36 +224,6 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Fiche non trouvée' });
     }
     res.json({ message: 'Fiche supprimée avec succès' });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
-  }
-});
-
-// GET statistiques des fiches
-router.get('/stats/count', async (req, res) => {
-  try {
-    const stats = await FicheInterne.aggregate([
-      {
-        $group: {
-          _id: '$type',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const result = {
-      'DA1.1': 0,
-      'AEA1.1': 0,
-      'AP1.1': 0,
-      total: 0
-    };
-
-    stats.forEach(stat => {
-      result[stat._id] = stat.count;
-      result.total += stat.count;
-    });
-
-    res.json(result);
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
