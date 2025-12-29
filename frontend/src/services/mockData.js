@@ -18,7 +18,7 @@ export const mockClients = [
     telephone: '06 12 34 56 78',
     email: 'marie.dupont@email.com',
     appareils: [
-      { type: 'Lave-linge', marque: 'Whirlpool', modele: 'AWE 6628' }
+      { _id: 'app1', type: 'Lave-linge', marque: 'Whirlpool', modele: 'AWE 6628' }
     ]
   },
   {
@@ -31,7 +31,7 @@ export const mockClients = [
     telephone: '06 23 45 67 89',
     email: 'jean.martin@email.com',
     appareils: [
-      { type: 'Lave-vaisselle', marque: 'Bosch', modele: 'SMS46AI01E' }
+      { _id: 'app2', type: 'Lave-vaisselle', marque: 'Bosch', modele: 'SMS46AI01E' }
     ]
   },
   {
@@ -44,7 +44,7 @@ export const mockClients = [
     telephone: '06 34 56 78 90',
     email: 'sophie.bernard@email.com',
     appareils: [
-      { type: 'Réfrigérateur', marque: 'Samsung', modele: 'RB34T632ESA' }
+      { _id: 'app3', type: 'Réfrigérateur', marque: 'Samsung', modele: 'RB34T632ESA' }
     ]
   }
 ];

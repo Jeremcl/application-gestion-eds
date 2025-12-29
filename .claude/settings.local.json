@@ -19,7 +19,8 @@
       "Bash(dir /b \"c:\\\\Users\\\\jerem\\\\OneDrive - Stéphane JEGOU\\\\Bureau\\\\Application gestion eds\\\\backend\\\\routes\")",
       "Bash(npm install:*)",
       "Bash(copy:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(git add:*)"
     ]
   }
 }

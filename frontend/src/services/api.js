@@ -1,8 +1,11 @@
-// MODE PRODUCTION : Utilise la vraie API backend
-// Build: 2025-12-28 17:30 - Connected to real backend
-export * from './apiReal';
+// Configuration pour le mode DEV/PROD
+// MODE DEV : Mock API (pas besoin de MongoDB)
+// MODE PROD : Real API (MongoDB requis)
 
-// MODE DEMO : Pour utiliser les données mockées, décommentez la ligne ci-dessous
-// export * from './apiMock';
+// Pour développer en local sans MongoDB
+export * from './apiMock';
 
-console.log('✅ Using REAL API (apiReal.js) - Build 2025-12-28 17:30');
+// Pour utiliser l'API réelle (décommentez au-dessus et commentez ci-dessous)
+// export * from './apiReal';
+
+console.log('📡 API Mode: MOCK (Development) - No MongoDB needed');

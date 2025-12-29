@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MonitorSmartphone, Plus, Search, DollarSign } from 'lucide-react';
+import { MonitorSmartphone, Plus, Search, Euro } from 'lucide-react';
 import { appareilsPret as appareilsPretAPI } from '../services/api';
 import AppareilPretCard from '../components/AppareilPretCard';
 import AppareilPretModal from '../components/AppareilPretModal';
@@ -131,7 +131,7 @@ const AppareilsPret = () => {
 
         <div className="metric-card" style={{ borderColor: 'var(--primary-500)' }}>
           <div className="metric-icon">
-            <DollarSign size={32} />
+            <Euro size={32} />
           </div>
           <div className="metric-content">
             <div className="metric-label">Valeur totale</div>

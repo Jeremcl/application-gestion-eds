@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { TrendingUp, TrendingDown, Wrench, Package, DollarSign, Users, Send, Sparkles } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wrench, Package, Euro, Users, Send, Sparkles } from 'lucide-react';
 import { interventions as interventionsAPI, clients as clientsAPI, pieces as piecesAPI } from '../services/api';
 import { ai as aiAPI } from '../services/api';
 
@@ -113,7 +113,7 @@ const Dashboard = () => {
       positive: true
     },
     {
-      icon: DollarSign,
+      icon: Euro,
       label: 'CA Mensuel',
       value: `${stats.caMensuel.toFixed(0)}€`,
       trend: '+15%',
