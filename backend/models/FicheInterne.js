@@ -8,7 +8,7 @@ const ficheInterneSchema = new mongoose.Schema({
   },
   numero: {
     type: String,
-    required: true,
+    required: false, // Généré automatiquement par le hook pre('save')
     unique: true
   },
   clientId: {
