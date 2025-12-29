@@ -130,7 +130,16 @@ const Dashboard = () => {
     setIsTyping(true);
 
     try {
-      const { data } = await aiAPI.chat(messageText, sessionId.current);
+      console.log('📤 Envoi message:', messageText);
+      const response = await aiAPI.chat(messageText, sessionId.current);
+      console.log('📥 Réponse brute:', response);
+
+      const data = response.data;
+      console.log('📊 Data extraite:', data);
+
+      if (!data || !data.message) {
+        throw new Error('Réponse invalide du serveur: ' + JSON.stringify(data));
+      }
 
       setTimeout(() => {
         const assistantMessage = {
@@ -138,11 +147,21 @@ const Dashboard = () => {
           content: data.message,
           timestamp: new Date()
         };
+        console.log('✅ Ajout message assistant:', assistantMessage);
         setMessages(prev => [...prev, assistantMessage]);
         setIsTyping(false);
       }, 500);
     } catch (error) {
-      console.error('Erreur chat AI:', error);
+      console.error('❌ Erreur chat AI:', error);
+      console.error('❌ Détails erreur:', error.response || error.message);
+
+      // Afficher un message d'erreur à l'utilisateur
+      const errorMessage = {
+        role: 'assistant',
+        content: `⚠️ Erreur: ${error.response?.data?.message || error.message || 'Impossible de contacter le serveur'}`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
       setIsTyping(false);
     }
   };
