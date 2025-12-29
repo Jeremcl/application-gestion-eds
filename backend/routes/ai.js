@@ -18,12 +18,29 @@ const getApplicationContext = async () => {
     const weekStart = new Date(today);
     weekStart.setDate(weekStart.getDate() - 7);
 
-    // Récupérer les statistiques des interventions
+    // ========== INTERVENTIONS ==========
     const interventionsMois = await Intervention.countDocuments({ dateCreation: { $gte: monthStart } });
     const interventionsSemaine = await Intervention.countDocuments({ dateCreation: { $gte: weekStart } });
     const interventionsEnCours = await Intervention.countDocuments({
       statut: { $in: ['En cours', 'Diagnostic', 'Réparation'] }
     });
+
+    // Répartition par statut
+    const parStatut = await Intervention.aggregate([
+      { $group: { _id: '$statut', count: { $sum: 1 } } }
+    ]);
+
+    // Répartition par type
+    const parType = await Intervention.aggregate([
+      { $group: { _id: '$typeIntervention', count: { $sum: 1 } } }
+    ]);
+
+    // Répartition par technicien
+    const parTechnicien = await Intervention.aggregate([
+      { $match: { technicien: { $ne: null } } },
+      { $group: { _id: '$technicien', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
 
     // CA du mois
     const caResult = await Intervention.aggregate([
@@ -32,7 +49,7 @@ const getApplicationContext = async () => {
     ]);
     const caMensuel = caResult.length > 0 ? caResult[0].total : 0;
 
-    // Stock critique
+    // ========== STOCK ==========
     const stockCritique = await Piece.countDocuments({
       actif: true,
       $expr: { $lt: ['$quantiteStock', '$quantiteMinimum'] }
@@ -41,26 +58,41 @@ const getApplicationContext = async () => {
     const piecesEnAlerte = await Piece.find({
       actif: true,
       $expr: { $lt: ['$quantiteStock', '$quantiteMinimum'] }
-    }).limit(10).select('reference designation quantiteStock quantiteMinimum');
+    }).limit(10).select('reference designation quantiteStock quantiteMinimum prixAchat');
 
-    // Clients
+    const totalPieces = await Piece.countDocuments({ actif: true });
+    const valeurStock = await Piece.aggregate([
+      { $match: { actif: true } },
+      { $group: { _id: null, total: { $sum: { $multiply: ['$quantiteStock', '$prixAchat'] } } } }
+    ]);
+
+    // ========== CLIENTS ==========
     const totalClients = await Client.countDocuments();
     const derniersClients = await Client.find().sort({ dateCreation: -1 }).limit(5)
-      .select('nom prenom telephone ville');
+      .select('nom prenom telephone ville email');
 
-    // Dernières interventions
+    const clientsParVille = await Client.aggregate([
+      { $group: { _id: '$ville', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // ========== INTERVENTIONS DÉTAILLÉES ==========
     const dernieresInterventions = await Intervention.find()
       .sort({ dateCreation: -1 })
       .limit(10)
-      .populate('clientId', 'nom prenom telephone')
-      .select('numero description statut dateCreation technicien typeIntervention');
+      .populate('clientId', 'nom prenom telephone ville')
+      .select('numero description statut dateCreation technicien typeIntervention coutTotal');
 
-    // Interventions urgentes (statut critique)
     const interventionsUrgentes = await Intervention.find({
       statut: { $in: ['Demande', 'Planifié'] },
       dateCreation: { $lt: weekStart }
     }).populate('clientId', 'nom prenom telephone')
-      .select('numero description statut dateCreation');
+      .select('numero description statut dateCreation technicien');
+
+    // ========== FACTURES ==========
+    const facturesEnAttente = await Facture.countDocuments({ statut: 'En attente' });
+    const facturesPayees = await Facture.countDocuments({ statut: 'Payée', dateFacture: { $gte: monthStart } });
 
     return {
       stats: {
@@ -69,8 +101,16 @@ const getApplicationContext = async () => {
         interventionsEnCours,
         caMensuel: caMensuel.toFixed(2),
         stockCritique,
-        totalClients
+        totalClients,
+        totalPieces,
+        valeurStock: valeurStock.length > 0 ? valeurStock[0].total.toFixed(2) : 0,
+        facturesEnAttente,
+        facturesPayees
       },
+      parStatut,
+      parType,
+      parTechnicien,
+      clientsParVille,
       piecesEnAlerte,
       derniersClients,
       dernieresInterventions,
@@ -88,51 +128,141 @@ const generateAIResponse = async (userMessage, conversationHistory, context) => 
 
   if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'ta_clé_openrouter_ici') {
     console.error('OPENROUTER_API_KEY non configurée');
-    // Fallback sur réponse simple si pas de clé
     return "⚠️ L'assistant IA n'est pas encore configuré. Veuillez ajouter votre clé OpenRouter dans le fichier .env du backend.";
   }
 
   try {
-    // Préparer le prompt système avec tout le contexte
-    const systemPrompt = `Tu es l'assistant intelligent d'EDS22, une entreprise de réparation d'électroménager à Guingamp (22).
+    // Construire le prompt système enrichi
+    const systemPrompt = `Tu es l'assistant IA intelligent d'EDS22, une entreprise de réparation d'électroménager basée à Guingamp (22200).
 
-Tu as accès en LECTURE SEULE aux données suivantes en temps réel :
+═══════════════════════════════════════════════════════════════
+📋 ARCHITECTURE DE L'APPLICATION EDS22
+═══════════════════════════════════════════════════════════════
 
-📊 STATISTIQUES :
-- Interventions ce mois : ${context.stats.interventionsMois}
-- Interventions cette semaine : ${context.stats.interventionsSemaine}
-- Interventions en cours : ${context.stats.interventionsEnCours}
-- CA mensuel : ${context.stats.caMensuel}€
-- Total clients : ${context.stats.totalClients}
-- Pièces en stock critique : ${context.stats.stockCritique}
+L'APPLICATION GÈRE 5 MODULES PRINCIPAUX :
 
-${context.stats.stockCritique > 0 ? `⚠️ PIÈCES EN ALERTE STOCK :
-${context.piecesEnAlerte.map(p => `- ${p.reference} "${p.designation}" : ${p.quantiteStock}/${p.quantiteMinimum}`).join('\n')}` : ''}
+1. 👥 CLIENTS
+   - Base de données complète des clients avec coordonnées
+   - Historique d'interventions par client
+   - Appareils enregistrés par client
+   - Géolocalisation par ville
 
-👥 DERNIERS CLIENTS :
-${context.derniersClients.map(c => `- ${c.nom} ${c.prenom} (${c.ville}) - ${c.telephone}`).join('\n')}
+2. 🔧 INTERVENTIONS
+   - Cycle de vie complet : Demande → Planifié → En cours → Diagnostic → Réparation → Terminé → Facturé
+   - Types : Réparation, Dépannage, Entretien, Devis, Installation
+   - Assignation aux techniciens (Jérémy, Stéphane, etc.)
+   - Suivi détaillé avec pièces utilisées et main d'œuvre
+
+3. 📦 STOCK & PIÈCES DÉTACHÉES
+   - Inventaire de pièces détachées avec références
+   - Gestion des quantités (stock actuel vs minimum)
+   - Alertes automatiques si stock < minimum
+   - Prix d'achat et prix de vente
+
+4. 💰 FACTURATION
+   - Génération automatique de factures depuis les interventions
+   - Statuts : En attente, Payée, Annulée
+   - Suivi des paiements
+
+5. 🏠 APPAREILS DE PRÊT
+   - Gestion des appareils prêtés aux clients pendant les réparations
+   - Suivi des retours et disponibilités
+
+═══════════════════════════════════════════════════════════════
+📊 DONNÉES EN TEMPS RÉEL (${new Date().toLocaleDateString('fr-FR')})
+═══════════════════════════════════════════════════════════════
+
+🔢 STATISTIQUES GLOBALES :
+• Interventions ce mois : ${context.stats.interventionsMois}
+• Interventions cette semaine : ${context.stats.interventionsSemaine}
+• Interventions en cours actuellement : ${context.stats.interventionsEnCours}
+• Chiffre d'affaires mensuel : ${context.stats.caMensuel}€
+• Total clients dans la base : ${context.stats.totalClients}
+• Pièces détachées référencées : ${context.stats.totalPieces}
+• Valeur totale du stock : ${context.stats.valeurStock}€
+• Factures en attente de paiement : ${context.stats.facturesEnAttente}
+• Factures payées ce mois : ${context.stats.facturesPayees}
+
+📍 RÉPARTITION PAR STATUT :
+${context.parStatut.map(s => `• ${s._id || 'Non défini'} : ${s.count} intervention(s)`).join('\n')}
+
+🛠️ RÉPARTITION PAR TYPE :
+${context.parType.map(t => `• ${t._id || 'Non défini'} : ${t.count} intervention(s)`).join('\n')}
+
+👨‍🔧 CHARGE PAR TECHNICIEN :
+${context.parTechnicien.length > 0 ? context.parTechnicien.map(t => `• ${t._id} : ${t.count} intervention(s)`).join('\n') : '• Aucune intervention assignée'}
+
+🌍 TOP 5 VILLES :
+${context.clientsParVille.map(v => `• ${v._id} : ${v.count} client(s)`).join('\n')}
+
+${context.stats.stockCritique > 0 ? `
+⚠️ ALERTES STOCK CRITIQUE (${context.stats.stockCritique} pièce(s)) :
+${context.piecesEnAlerte.map(p => `• ${p.reference} - "${p.designation}" : ${p.quantiteStock}/${p.quantiteMinimum} unités (Prix: ${p.prixAchat}€)`).join('\n')}
+` : '✅ STOCK : Toutes les pièces sont au-dessus du seuil minimum'}
+
+👥 DERNIERS CLIENTS ENREGISTRÉS :
+${context.derniersClients.map(c => `• ${c.nom} ${c.prenom} (${c.ville}) - ${c.telephone}${c.email ? ' - ' + c.email : ''}`).join('\n')}
 
 🔧 DERNIÈRES INTERVENTIONS :
-${context.dernieresInterventions.map(i => `- ${i.numero} : ${i.description} [${i.statut}] - Technicien: ${i.technicien || 'Non assigné'}`).join('\n')}
+${context.dernieresInterventions.map(i => `• ${i.numero} - ${i.description} [${i.statut}] - Client: ${i.clientId?.nom || 'N/A'} ${i.clientId?.prenom || ''} (${i.clientId?.ville || 'N/A'}) - Tech: ${i.technicien || 'Non assigné'}${i.coutTotal ? ' - Coût: ' + i.coutTotal + '€' : ''}`).join('\n')}
 
-${context.interventionsUrgentes.length > 0 ? `🚨 INTERVENTIONS URGENTES (en attente > 7 jours) :
-${context.interventionsUrgentes.map(i => `- ${i.numero} : ${i.description} [Client: ${i.clientId?.nom} ${i.clientId?.prenom}]`).join('\n')}` : ''}
+${context.interventionsUrgentes.length > 0 ? `
+🚨 INTERVENTIONS URGENTES (en attente > 7 jours) :
+${context.interventionsUrgentes.map(i => `• ${i.numero} - ${i.description} [${i.statut}] - Client: ${i.clientId?.nom} ${i.clientId?.prenom} - Tech: ${i.technicien || 'Non assigné'}`).join('\n')}
+` : '✅ Aucune intervention en retard'}
 
-TES CAPACITÉS (LECTURE SEULE POUR L'INSTANT) :
-- Consulter les statistiques et tendances
-- Rechercher des informations sur les clients, interventions, pièces
-- Identifier les problèmes (stock faible, interventions en retard)
-- Donner des recommandations basées sur les données
-- Répondre aux questions sur l'activité de l'entreprise
+═══════════════════════════════════════════════════════════════
+🎯 TES CAPACITÉS & INSTRUCTIONS
+═══════════════════════════════════════════════════════════════
 
-IMPORTANT :
-- Tu peux CONSULTER toutes les données ci-dessus
-- Tu NE PEUX PAS encore créer, modifier ou supprimer des données (en lecture seule)
-- Sois concis et précis dans tes réponses
-- Utilise des emojis pour rendre tes réponses plus lisibles
-- Si on te demande de faire une action (créer, modifier), explique que cette fonctionnalité arrive bientôt
+MODE ACTUEL : LECTURE SEULE (Consultation uniquement)
 
-Réponds de manière professionnelle, utile et concise.`;
+TU PEUX :
+✅ Analyser les statistiques et identifier les tendances
+✅ Répondre aux questions sur les interventions, clients, stock
+✅ Calculer des métriques (taux, moyennes, totaux)
+✅ Détecter les problèmes (stock faible, interventions urgentes, surcharge technicien)
+✅ Donner des recommandations basées sur les données réelles
+✅ Faire des comparaisons et des analyses croisées
+✅ Répondre aux salutations de manière chaleureuse et professionnelle
+
+TU NE PEUX PAS (ENCORE) :
+❌ Créer, modifier ou supprimer des données
+❌ Effectuer des actions dans l'application
+→ Si demandé, explique que cette fonctionnalité arrive prochainement
+
+═══════════════════════════════════════════════════════════════
+📖 EXEMPLES DE RAISONNEMENT
+═══════════════════════════════════════════════════════════════
+
+Exemple 1 - Salutation :
+Q: "Salut"
+R: "Bonjour ! 👋 Je suis l'assistant intelligent d'EDS22. Comment puis-je vous aider aujourd'hui ? Je peux vous donner des statistiques, analyser vos interventions, vérifier votre stock ou répondre à toute question sur l'activité de l'entreprise."
+
+Exemple 2 - Analyse de charge :
+Q: "Quel technicien est le plus chargé ?"
+R: Analyser context.parTechnicien, identifier celui avec le plus d'interventions, donner le nombre exact et suggérer une répartition si déséquilibrée
+
+Exemple 3 - Analyse financière :
+Q: "Comment va le CA ?"
+R: Analyser context.stats.caMensuel, comparer avec le nombre d'interventions, calculer le panier moyen si possible, donner un avis contextualisé
+
+Exemple 4 - Stock critique :
+Q: "Des problèmes de stock ?"
+R: Si context.stats.stockCritique > 0, lister les pièces concernées avec recommandation de commande urgente. Sinon, confirmer que tout va bien.
+
+═══════════════════════════════════════════════════════════════
+💡 DIRECTIVES DE RÉPONSE
+═══════════════════════════════════════════════════════════════
+
+1. PRÉCISION : Base-toi UNIQUEMENT sur les données réelles ci-dessus
+2. CONCISION : Réponds en 2-4 phrases maximum sauf si plus de détails sont demandés
+3. CLARTÉ : Utilise des emojis pour structurer (📊 📈 ⚠️ ✅ etc.)
+4. PROACTIVITÉ : Si tu détectes un problème dans les données, mentionne-le
+5. CONTEXTE : Relie les données entre elles pour donner du sens
+6. TON : Professionnel mais accessible, comme un vrai collègue expert
+
+Réponds maintenant à la question de l'utilisateur :`;
 
     // Préparer l'historique des messages pour l'API
     const messages = [
@@ -146,20 +276,20 @@ Réponds de manière professionnelle, utile et concise.`;
 
     console.log('🤖 Envoi requête à OpenRouter...');
 
-    // Appel à l'API OpenRouter
+    // Appel à l'API OpenRouter avec Gemini 2.0 Flash (meilleur modèle gratuit)
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: 'meta-llama/llama-3.2-3b-instruct:free', // Modèle gratuit
+        model: 'google/gemini-2.0-flash-exp:free', // Gemini 2.0 Flash - Meilleur que Llama, toujours gratuit
         messages: messages,
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 1000 // Augmenté pour des réponses plus détaillées
       },
       {
         headers: {
           'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'http://localhost:5001',
+          'HTTP-Referer': 'https://api-eds.srv1068230.hstgr.cloud',
           'X-Title': 'EDS22 - Assistant IA'
         },
         timeout: 30000
