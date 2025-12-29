@@ -15,22 +15,79 @@ const Dashboard = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [placeholder, setPlaceholder] = useState('Voir les statistiques du mois...');
   const messagesEndRef = useRef(null);
   const sessionId = useRef(`session-${Date.now()}`);
 
+  // Récupérer l'utilisateur connecté
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
   useEffect(() => {
     loadDashboardData();
-    // Message de bienvenue de l'assistant
-    setMessages([{
-      role: 'assistant',
-      content: 'Bienvenue sur EDS22 ! Je suis votre assistant intelligent. Je peux vous aider à consulter vos statistiques, gérer vos clients, suivre vos interventions et contrôler votre stock. Comment puis-je vous aider aujourd\'hui ?',
-      timestamp: new Date()
-    }]);
   }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Animation typewriter pour le placeholder
+  useEffect(() => {
+    const suggestions = [
+      'Voir les statistiques du mois...',
+      'Rechercher un client...',
+      'Vérifier le stock critique...',
+      'Consulter les interventions en cours...',
+      'Analyser le chiffre d\'affaires...',
+      'Voir les alertes stock...'
+    ];
+
+    let currentIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let isPaused = false;
+
+    const typewriter = () => {
+      const currentSuggestion = suggestions[currentIndex];
+
+      if (isPaused) {
+        return;
+      }
+
+      if (!isDeleting && charIndex <= currentSuggestion.length) {
+        // Écrire lettre par lettre
+        setPlaceholder(currentSuggestion.substring(0, charIndex));
+        charIndex++;
+
+        if (charIndex > currentSuggestion.length) {
+          // Pause avant de commencer à effacer
+          isPaused = true;
+          setTimeout(() => {
+            isPaused = false;
+            isDeleting = true;
+          }, 2000);
+        }
+      } else if (isDeleting) {
+        charIndex--;
+
+        if (charIndex === 0) {
+          // Changer immédiatement de suggestion sans afficher de vide
+          isDeleting = false;
+          currentIndex = (currentIndex + 1) % suggestions.length;
+          // Commencer directement avec la première lettre de la nouvelle suggestion
+          const nextSuggestion = suggestions[currentIndex];
+          setPlaceholder(nextSuggestion.substring(0, 1));
+          charIndex = 1;
+        } else {
+          // Effacer lettre par lettre
+          setPlaceholder(currentSuggestion.substring(0, charIndex));
+        }
+      }
+    };
+
+    const interval = setInterval(typewriter, isDeleting ? 50 : 100);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -90,13 +147,6 @@ const Dashboard = () => {
     }
   };
 
-  const suggestions = [
-    '📊 Voir les stats du mois',
-    '🔍 Rechercher un client',
-    '⚙️ Créer une nouvelle intervention',
-    '📦 Vérifier le stock critique'
-  ];
-
   const metricCards = [
     {
       icon: Wrench,
@@ -135,89 +185,179 @@ const Dashboard = () => {
         <p className="page-subtitle">Vue d'ensemble de votre activité</p>
       </div>
 
-      {/* BARRE DE CHAT IA - En première position */}
+      {/* CHATBOT IA - Interface complète */}
       <div style={{
         background: 'white',
         borderRadius: 'var(--radius-xl)',
-        padding: 'var(--space-4)',
         boxShadow: 'var(--shadow-md)',
         marginBottom: 'var(--space-6)',
-        border: '1px solid var(--neutral-200)'
+        border: '2px solid var(--primary-500)',
+        overflow: 'hidden',
+        transition: 'all var(--transition-base)'
       }}>
-        <div style={{
-          display: 'flex',
-          gap: 'var(--space-3)',
-          alignItems: 'center'
-        }}>
+        {/* Header de bienvenue */}
+        {messages.length === 0 && (
           <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: 'var(--radius-lg)',
-            background: 'var(--gradient-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            flexShrink: 0
+            padding: 'var(--space-6) var(--space-4) var(--space-4)',
+            textAlign: 'center',
+            borderBottom: '1px solid var(--neutral-100)'
           }}>
-            <Sparkles size={20} />
-          </div>
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Posez une question à l'assistant IA..."
-            style={{
-              flex: 1,
-              padding: 'var(--space-3) var(--space-4)',
-              borderRadius: 'var(--radius-full)',
-              border: '2px solid var(--neutral-200)',
-              background: 'var(--neutral-50)',
-              fontSize: '0.875rem',
-              transition: 'all var(--transition-fast)'
-            }}
-            onFocus={(e) => e.target.style.borderColor = 'var(--primary-500)'}
-            onBlur={(e) => e.target.style.borderColor = 'var(--neutral-200)'}
-          />
-          <button
-            className="btn btn-primary"
-            onClick={() => handleSendMessage()}
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: 'var(--radius-full)',
-              padding: 0,
-              flexShrink: 0
-            }}
-          >
-            <Send size={18} />
-          </button>
-        </div>
-        {/* Suggestions compactes */}
-        {messages.length <= 1 && (
-          <div style={{
-            display: 'flex',
-            gap: 'var(--space-2)',
-            marginTop: 'var(--space-3)',
-            flexWrap: 'wrap'
-          }}>
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                className="btn btn-secondary"
-                style={{
-                  fontSize: '0.75rem',
-                  padding: '6px 12px',
-                  borderRadius: 'var(--radius-full)'
-                }}
-                onClick={() => handleSendMessage(suggestion)}
-              >
-                {suggestion}
-              </button>
-            ))}
+            <h2 style={{
+              fontSize: '2rem',
+              fontWeight: 300,
+              color: 'var(--neutral-800)',
+              marginBottom: 'var(--space-3)',
+              lineHeight: '1.4',
+              letterSpacing: '-0.02em',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+            }}>
+              Bonjour <span style={{
+                color: 'var(--primary-500)',
+                fontWeight: 600,
+                background: 'linear-gradient(135deg, var(--primary-500) 0%, var(--emerald-500) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>{currentUser.nom || 'Admin'}</span> 👋
+            </h2>
+            <p style={{
+              fontSize: '1.125rem',
+              color: 'var(--neutral-600)',
+              fontWeight: 300,
+              letterSpacing: '0.01em'
+            }}>
+              Comment puis-je vous aider aujourd'hui ?
+            </p>
           </div>
         )}
+
+        {/* Historique des messages */}
+        <div style={{
+          maxHeight: messages.length === 0 ? '0px' : '400px',
+          overflowY: 'auto',
+          padding: messages.length === 0 ? '0' : 'var(--space-4)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-3)',
+          transition: 'all 0.3s ease'
+        }}>
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              style={{
+                display: 'flex',
+                gap: 'var(--space-3)',
+                alignItems: 'flex-start',
+                justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start'
+              }}
+            >
+              {message.role === 'assistant' && (
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: 'var(--radius-lg)',
+                  background: 'var(--gradient-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  flexShrink: 0
+                }}>
+                  <Sparkles size={16} />
+                </div>
+              )}
+              <div style={{
+                maxWidth: '70%',
+                padding: 'var(--space-3) var(--space-4)',
+                borderRadius: 'var(--radius-lg)',
+                background: message.role === 'user' ? 'var(--primary-500)' : 'var(--neutral-100)',
+                color: message.role === 'user' ? 'white' : 'var(--neutral-900)',
+                fontSize: '0.875rem',
+                lineHeight: '1.5'
+              }}>
+                {message.content}
+              </div>
+            </div>
+          ))}
+
+          {/* Indicateur de typing */}
+          {isTyping && (
+            <div style={{
+              display: 'flex',
+              gap: 'var(--space-3)',
+              alignItems: 'flex-start'
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--gradient-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                flexShrink: 0
+              }}>
+                <Sparkles size={16} />
+              </div>
+              <div style={{
+                padding: 'var(--space-3) var(--space-4)',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--neutral-100)',
+                color: 'var(--neutral-600)',
+                fontSize: '0.875rem'
+              }}>
+                <span className="typing-dots">●●●</span>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Barre de séparation */}
+        <div style={{ height: '1px', background: 'var(--neutral-200)' }} />
+
+        {/* Barre de saisie */}
+        <div style={{ padding: 'var(--space-4)' }}>
+          <div style={{
+            display: 'flex',
+            gap: 'var(--space-3)',
+            alignItems: 'center'
+          }}>
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder={placeholder}
+              style={{
+                flex: 1,
+                padding: 'var(--space-3) var(--space-4)',
+                borderRadius: 'var(--radius-full)',
+                border: '2px solid var(--neutral-200)',
+                background: 'var(--neutral-50)',
+                fontSize: '0.875rem',
+                transition: 'all var(--transition-fast)'
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--primary-500)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--neutral-200)'}
+            />
+            <button
+              className="btn btn-primary"
+              onClick={() => handleSendMessage()}
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: 'var(--radius-full)',
+                padding: 0,
+                flexShrink: 0
+              }}
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Cartes métriques */}

@@ -365,46 +365,62 @@ export const factures = {
 };
 
 // AI Assistant
-export const ai = {
-  chat: async (message, sessionId) => {
-    await delay(500);
+// ⚠️ IMPORTANT : Le chatbot AI utilise toujours l'API RÉELLE (backend + OpenRouter)
+// même en mode Mock, pour avoir des réponses vraiment conversationnelles
+import axios from 'axios';
 
-    const msg = message.toLowerCase();
-    let response = '';
+const API_URL = 'http://localhost:5001';
 
-    if (msg.includes('stat') || msg.includes('chiffre')) {
-      response = `📊 Voici les statistiques du mois :\n\n• ${mockStats.interventionsMois} interventions réalisées\n• Chiffre d'affaires : ${mockStats.caMensuel.toFixed(2)}€\n• Taux de satisfaction : 94%\n\nVoulez-vous plus de détails ?`;
-    } else if (msg.includes('stock') || msg.includes('pièce')) {
-      const stockCritique = mockPieces.filter(p => p.quantiteStock < p.quantiteMinimum).length;
-      if (stockCritique > 0) {
-        response = `⚠️ Attention ! ${stockCritique} pièce${stockCritique > 1 ? 's' : ''} en stock critique.\n\nJe vous recommande de passer une commande rapidement pour éviter toute rupture.`;
-      } else {
-        response = `✅ Le stock est bien approvisionné ! Toutes les pièces sont au-dessus du seuil minimum.`;
-      }
-    } else if (msg.includes('client')) {
-      response = `👥 Vous avez actuellement ${mockClients.length} clients dans votre base.\n\nQue souhaitez-vous faire ?\n• Rechercher un client\n• Créer une nouvelle fiche\n• Voir les derniers ajouts`;
-    } else if (msg.includes('intervention') || msg.includes('réparation')) {
-      const enCours = mockInterventions.filter(i => ['En cours', 'Diagnostic', 'Réparation'].includes(i.statut)).length;
-      response = `🔧 ${enCours} intervention${enCours > 1 ? 's' : ''} en cours actuellement.\n\nVoulez-vous :\n• Voir le planning\n• Créer une nouvelle intervention\n• Consulter les urgences`;
-    } else {
-      response = `Je suis l'assistant EDS22. Je peux vous aider à :\n\n• 📊 Consulter vos statistiques\n• 👥 Gérer vos clients\n• 🔧 Suivre vos interventions\n• 📦 Contrôler votre stock\n• 💰 Générer des factures\n\nQue puis-je faire pour vous ?`;
+// Instance axios pour les appels AI uniquement
+const aiApi = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Intercepteur pour ajouter le token
+aiApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-    return {
-      data: {
-        message: response,
-        conversation: { sessionId, messages: [] }
-      }
-    };
+export const ai = {
+  // Le chatbot utilise TOUJOURS l'API réelle avec OpenRouter
+  chat: async (message, sessionId) => {
+    try {
+      const response = await aiApi.post('/api/ai/chat', { message, sessionId });
+      return response;
+    } catch (error) {
+      console.error('❌ Erreur chatbot AI:', error);
+      // Fallback en cas d'erreur backend
+      return {
+        data: {
+          message: "Désolé, je rencontre un problème de connexion avec le serveur. Assurez-vous que le backend est démarré et que MongoDB fonctionne.",
+          conversation: { sessionId, messages: [] }
+        }
+      };
+    }
   },
   getConversation: async (sessionId) => {
-    await delay();
-    return {
-      data: {
-        sessionId,
-        messages: []
-      }
-    };
+    try {
+      const response = await aiApi.get(`/api/ai/chat/${sessionId}`);
+      return response;
+    } catch (error) {
+      console.error('❌ Erreur récupération conversation:', error);
+      return {
+        data: {
+          sessionId,
+          messages: []
+        }
+      };
+    }
   }
 };
 
