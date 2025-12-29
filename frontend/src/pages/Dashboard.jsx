@@ -154,11 +154,13 @@ const Dashboard = () => {
     } catch (error) {
       console.error('❌ Erreur chat AI:', error);
       console.error('❌ Détails erreur:', error.response || error.message);
+      console.error('❌ Data de la réponse:', error.response?.data);
 
       // Afficher un message d'erreur à l'utilisateur
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Impossible de contacter le serveur';
       const errorMessage = {
         role: 'assistant',
-        content: `⚠️ Erreur: ${error.response?.data?.message || error.message || 'Impossible de contacter le serveur'}`,
+        content: `⚠️ Erreur serveur: ${errorMsg}\n\nVeuillez vérifier les logs du backend pour plus de détails.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
