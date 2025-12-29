@@ -213,8 +213,8 @@ export const factures = {
 
 // AI
 export const ai = {
-  chat: async (message, context) => {
-    const response = await api.post('/api/ai/chat', { message, context });
+  chat: async (message, sessionId) => {
+    const response = await api.post('/api/ai/chat', { message, sessionId });
     return response;
   },
   getConversations: async () => {
