@@ -142,6 +142,10 @@ export const interventions = {
   updateStatut: async (id, statut) => {
     const response = await api.patch(`/api/interventions/${id}/statut`, { statut });
     return response;
+  },
+  getStats: async () => {
+    const response = await api.get('/api/interventions/stats');
+    return response;
   }
 };
 
