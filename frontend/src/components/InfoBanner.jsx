@@ -45,13 +45,12 @@ const InfoBanner = () => {
     try {
       // Utiliser l'API OpenWeatherMap gratuite
       // Vous pouvez obtenir une clé API gratuite sur https://openweathermap.org/api
-      const API_KEY = 'VOTRE_CLE_API'; // À remplacer
+      const API_KEY = 'f9eeee3eab097f8ac319532b7bc9771a'; // À remplacer
       const city = 'Paris'; // Ville par défaut
 
       // Pour le moment, on simule des données
       // Décommentez le code ci-dessous quand vous aurez une clé API
-      /*
-      const response = await fetch(
+      /*     const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric&lang=fr`
       );
       const data = await response.json();
@@ -59,15 +58,15 @@ const InfoBanner = () => {
         temp: Math.round(data.main.temp),
         description: data.weather[0].description,
         icon: data.weather[0].main
-      });
-      */
 
+      /*
       // Données simulées pour le développement
       setWeather({
         temp: 18,
         description: 'Partiellement nuageux',
         icon: 'Clouds'
       });
+      */
     } catch (error) {
       console.error('Erreur chargement météo:', error);
       setWeather({
