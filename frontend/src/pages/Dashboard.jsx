@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { TrendingUp, TrendingDown, Wrench, Package, Euro, Users, Send, Sparkles } from 'lucide-react';
 import { interventions as interventionsAPI, clients as clientsAPI, pieces as piecesAPI } from '../services/api';
 import { ai as aiAPI } from '../services/api';
+import InfoBanner from '../components/InfoBanner';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -203,7 +204,8 @@ const Dashboard = () => {
     <div className="animate-fade-in">
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Vue d'ensemble de votre activité</p>
+        {/* Info Banner - Date, Heure, Météo */}
+        <InfoBanner />
       </div>
 
       {/* CHATBOT IA - Interface complète */}
