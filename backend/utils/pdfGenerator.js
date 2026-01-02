@@ -202,14 +202,24 @@ const genererFicheDepot = (data, stream) => {
   doc.moveDown(2);
   doc.text('Signature', leftMargin, doc.y, { align: 'left' });
 
-  // === LOGO EN BAS À DROITE ===
+  // === PIED DE PAGE - SIRET CENTRÉ ===
+  const footerY = doc.page.height - doc.page.margins.bottom - 30;
+  doc.fontSize(9).font('Helvetica').fillColor(EDS_GREEN);
+  doc.text(
+    'EDS22 - Électro Dépannage Service - SIRET : 91137432000016',
+    leftMargin,
+    footerY,
+    { width: contentWidth, align: 'center' }
+  );
+
+  // === LOGO EN BAS À DROITE (PETIT) ===
   const logoPath = path.join(__dirname, '..', 'assets', 'Logo-eds-vert.svg');
   try {
     if (fs.existsSync(logoPath)) {
       const svgContent = fs.readFileSync(logoPath, 'utf8');
-      const logoSize = 120;
-      const logoX = rightMargin - logoSize;
-      const logoY = doc.page.height - doc.page.margins.bottom - logoSize - 40;
+      const logoSize = 50; // Taille réduite du logo
+      const logoX = rightMargin - logoSize - 5; // 5px de marge depuis le bord droit
+      const logoY = doc.page.height - doc.page.margins.bottom - logoSize - 5; // 5px de marge depuis le bas
 
       doc.save();
       doc.translate(logoX, logoY);
@@ -219,16 +229,6 @@ const genererFicheDepot = (data, stream) => {
   } catch (error) {
     console.error('Erreur chargement logo:', error);
   }
-
-  // === PIED DE PAGE ===
-  const footerY = doc.page.height - doc.page.margins.bottom - 20;
-  doc.fontSize(9).font('Helvetica').fillColor(EDS_GREEN);
-  doc.text(
-    'EDS22 - Électro Dépannage Service - SIRET : 91137432000016',
-    leftMargin,
-    footerY,
-    { width: contentWidth, align: 'center' }
-  );
 
   doc.end();
   return doc;
