@@ -14,7 +14,7 @@ const clientSchema = new mongoose.Schema({
   },
   prenom: {
     type: String,
-    required: true
+    required: false
   },
   adresse: String,
   codePostal: String,

@@ -268,10 +268,18 @@ async function importInterventions() {
         const remarque = cols[colMap['Remarque réparation']] || '';
 
         // Vérifier données minimales
-        if (!telephone || !typeAppareil) {
+        if (!telephone) {
           stats.skipped++;
-          if (stats.skipped <= 5) {
-            console.log(`⏭️  Ligne ${i + 1} ignorée: pas de téléphone ou type appareil`);
+          if (stats.skipped <= 10) {
+            console.log(`⏭️  Ligne ${i + 1} ignorée: pas de téléphone valide`);
+          }
+          continue;
+        }
+
+        if (!typeAppareil) {
+          stats.skipped++;
+          if (stats.skipped <= 10) {
+            console.log(`⏭️  Ligne ${i + 1} ignorée: pas de type d'appareil (${nomComplet || 'inconnu'})`);
           }
           continue;
         }
