@@ -96,8 +96,16 @@ const interventionSchema = new mongoose.Schema({
 // Auto-génération du numéro d'intervention
 interventionSchema.pre('save', async function(next) {
   if (!this.numero) {
-    const year = new Date().getFullYear();
-    const count = await mongoose.model('Intervention').countDocuments();
+    // Utiliser l'année de dateCreation au lieu de l'année actuelle
+    const year = this.dateCreation ? new Date(this.dateCreation).getFullYear() : new Date().getFullYear();
+
+    // Compter les interventions de cette année spécifique
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+    const count = await mongoose.model('Intervention').countDocuments({
+      dateCreation: { $gte: yearStart, $lte: yearEnd }
+    });
+
     this.numero = `INT-${year}-${String(count + 1).padStart(4, '0')}`;
   }
 
