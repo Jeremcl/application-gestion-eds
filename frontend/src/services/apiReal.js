@@ -114,6 +114,10 @@ export const clients = {
   deleteDevice: async (clientId, appareilId) => {
     const response = await api.delete(`/api/clients/${clientId}/appareils/${appareilId}`);
     return response;
+  },
+  getDeviceInterventions: async (clientId, appareilId, params) => {
+    const response = await api.get(`/api/clients/${clientId}/appareils/${appareilId}/interventions`, { params });
+    return response;
   }
 };
 
