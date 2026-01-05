@@ -5,6 +5,8 @@ const pieceUtiliseeSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Piece'
   },
+  nom: String,  // Nom de la pièce (pour pièces non cataloguées)
+  reference: String,  // Référence de la pièce (pour pièces non cataloguées)
   quantite: Number,
   prixUnitaire: Number
 }, { _id: false });
