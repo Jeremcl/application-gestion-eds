@@ -36,7 +36,7 @@ function parsePrice(priceStr) {
 function parseDate(dateStr) {
   if (!dateStr) return null;
 
-  // Format: "17 janvier 2026 14:00 (UTC+1) → 15:00"
+  // Format: "17 janvier 2026 14:00 (UTC+1) → 15:00" ou "20 décembre 2025"
   const match = dateStr.match(/(\d+)\s+(\w+)\s+(\d{4})/);
   if (!match) return null;
 
@@ -45,13 +45,16 @@ function parseDate(dateStr) {
   const year = match[3];
 
   const months = {
-    'janvier': 0, 'février': 1, 'mars': 2, 'avril': 3,
-    'mai': 4, 'juin': 5, 'juillet': 6, 'août': 7,
-    'septembre': 8, 'octobre': 9, 'novembre': 10, 'décembre': 11
+    'janvier': 0, 'fevrier': 1, 'février': 1, 'mars': 2, 'avril': 3,
+    'mai': 4, 'juin': 5, 'juillet': 6, 'aout': 7, 'août': 7,
+    'septembre': 8, 'octobre': 9, 'novembre': 10, 'decembre': 11, 'décembre': 11
   };
 
   const month = months[monthName];
-  if (month === undefined) return null;
+  if (month === undefined) {
+    console.log(`⚠️  Mois non reconnu: "${monthName}" dans "${dateStr}"`);
+    return null;
+  }
 
   return new Date(year, month, day);
 }
@@ -375,6 +378,15 @@ async function importInterventions() {
           });
         }
 
+        // Vérifier qu'on a au moins une date valide
+        if (!dateEntree && !dateSortie) {
+          stats.skipped++;
+          if (stats.skipped <= 15) {
+            console.log(`⏭️  Ligne ${i + 1} ignorée: pas de date valide (${nomComplet})`);
+          }
+          continue;
+        }
+
         // Créer l'intervention
         const intervention = new Intervention({
           clientId: client._id,
@@ -389,7 +401,7 @@ async function importInterventions() {
           diagnostic,
           statut: mapStatut(etat),
           typeIntervention: mapTypeIntervention(typeReservation),
-          dateCreation: dateEntree || new Date(),
+          dateCreation: dateEntree || dateSortie || new Date(2025, 0, 1), // Fallback: 1er janvier 2025
           datePrevue: dateEntree,
           dateRealisation: dateSortie,
           piecesUtilisees,
