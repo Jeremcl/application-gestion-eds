@@ -12,6 +12,9 @@ const Interventions = () => {
   const [filterStatut, setFilterStatut] = useState('');
   const [showInterventionModal, setShowInterventionModal] = useState(false);
   const [editingIntervention, setEditingIntervention] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalInterventions, setTotalInterventions] = useState(0);
 
   const statuts = ['Demande', 'Planifié', 'En cours', 'Diagnostic', 'Réparation', 'Terminé', 'Facturé'];
 
@@ -27,16 +30,18 @@ const Interventions = () => {
 
   useEffect(() => {
     loadInterventions();
-  }, [filterStatut]);
+  }, [filterStatut, currentPage]);
 
   const loadInterventions = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page: currentPage, limit: 30 };
       if (filterStatut) params.statut = filterStatut;
 
       const { data } = await interventionsAPI.getAll(params);
       setInterventions(data.interventions);
+      setTotalPages(data.totalPages || 1);
+      setTotalInterventions(data.total || 0);
     } catch (error) {
       console.error('Erreur chargement interventions:', error);
     } finally {
@@ -77,7 +82,7 @@ const Interventions = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Interventions</h1>
-          <p className="page-subtitle">{interventions.length} intervention(s)</p>
+          <p className="page-subtitle">{totalInterventions} intervention(s) {totalPages > 1 && `- Page ${currentPage}/${totalPages}`}</p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
           <div style={{ display: 'flex', gap: '4px', background: 'white', borderRadius: 'var(--radius-md)', padding: '4px' }}>
@@ -108,7 +113,7 @@ const Interventions = () => {
         <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
           <button
             className={`btn ${!filterStatut ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setFilterStatut('')}
+            onClick={() => { setFilterStatut(''); setCurrentPage(1); }}
           >
             Tous
           </button>
@@ -116,7 +121,7 @@ const Interventions = () => {
             <button
               key={statut}
               className={`btn ${filterStatut === statut ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setFilterStatut(statut)}
+              onClick={() => { setFilterStatut(statut); setCurrentPage(1); }}
             >
               {statut}
             </button>
@@ -277,6 +282,65 @@ const Interventions = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+          marginTop: 'var(--space-6)',
+          padding: 'var(--space-4)'
+        }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+          >
+            ← Précédent
+          </button>
+
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            {[...Array(totalPages)].map((_, index) => {
+              const pageNum = index + 1;
+              // Afficher seulement quelques pages autour de la page actuelle
+              if (
+                pageNum === 1 ||
+                pageNum === totalPages ||
+                (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
+              ) {
+                return (
+                  <button
+                    key={pageNum}
+                    className={`btn ${currentPage === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setCurrentPage(pageNum)}
+                    style={{ minWidth: '40px' }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              } else if (
+                pageNum === currentPage - 3 ||
+                pageNum === currentPage + 3
+              ) {
+                return <span key={pageNum} style={{ padding: '0 var(--space-2)' }}>...</span>;
+              }
+              return null;
+            })}
+          </div>
+
+          <button
+            className="btn btn-secondary"
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
+          >
+            Suivant →
+          </button>
+        </div>
       )}
 
       {/* Intervention Modal */}
