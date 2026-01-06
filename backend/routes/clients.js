@@ -164,7 +164,7 @@ router.get('/:clientId/appareils/:appareilId', async (req, res) => {
 // GET les interventions d'un appareil spécifique
 router.get('/:clientId/appareils/:appareilId/interventions', async (req, res) => {
   try {
-    const { page = 1, limit = 100, statut } = req.query;
+    const { page = 1, limit = 30, statut } = req.query;
 
     // Construire la requête
     const query = {

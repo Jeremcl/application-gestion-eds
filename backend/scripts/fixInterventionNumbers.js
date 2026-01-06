@@ -20,8 +20,29 @@ async function fixInterventionNumbers() {
     const yearCounters = {};
     let updated = 0;
 
-    console.log('🔄 Régénération des numéros...\n');
+    console.log('🔄 Étape 1: Attribution de numéros temporaires...\n');
 
+    // Première passe : mettre des numéros temporaires pour éviter les conflits
+    for (let i = 0; i < interventions.length; i++) {
+      const intervention = interventions[i];
+      const tempNumero = `TEMP-${String(i + 1).padStart(6, '0')}`;
+
+      await Intervention.updateOne(
+        { _id: intervention._id },
+        { $set: { numero: tempNumero } }
+      );
+
+      if ((i + 1) <= 10) {
+        console.log(`  ${intervention.numero} → ${tempNumero}`);
+      } else if ((i + 1) === 11) {
+        console.log('  ... (affichage limité aux 10 premières)');
+      }
+    }
+
+    console.log(`\n✅ ${interventions.length} numéros temporaires attribués\n`);
+    console.log('🔄 Étape 2: Régénération des numéros définitifs...\n');
+
+    // Deuxième passe : attribuer les vrais numéros par année
     for (const intervention of interventions) {
       const year = new Date(intervention.dateCreation).getFullYear();
 
@@ -42,7 +63,7 @@ async function fixInterventionNumbers() {
       updated++;
 
       if (updated <= 10) {
-        console.log(`  ${intervention.numero} → ${newNumero} (${new Date(intervention.dateCreation).toLocaleDateString('fr-FR')})`);
+        console.log(`  TEMP-xxx → ${newNumero} (${new Date(intervention.dateCreation).toLocaleDateString('fr-FR')})`);
       } else if (updated === 11) {
         console.log('  ... (affichage limité aux 10 premières)');
       }
