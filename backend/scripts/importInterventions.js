@@ -115,17 +115,70 @@ function parseAdresse(adresseStr) {
 function mapStatut(etatNotion) {
   if (!etatNotion) return 'Demande';
 
-  const statuts = {
-    'Attente rdv': 'Planifié',
-    'Attente diagnostic': 'Diagnostic',
-    'En réparation': 'Réparation',
-    'Terminé': 'Terminé',
-    'Facturé': 'Facturé',
-    'RDV annulé': 'Demande',
-    'Appareil récupérer': 'Terminé'
-  };
+  const etatLower = etatNotion.toLowerCase().trim();
 
-  return statuts[etatNotion] || 'Demande';
+  // Mapping des statuts Notion → Statuts application
+  // Enum disponible: 'Demande', 'Planifié', 'En cours', 'Diagnostic', 'Réparation', 'Terminé', 'Facturé'
+
+  // TERMINÉ - Interventions complétées
+  if (etatLower.includes('terminer') ||
+      etatLower.includes('terminé') ||
+      etatLower.includes('récupérer') ||
+      etatLower.includes('recuperer') ||
+      etatLower.includes('appareil réparer') ||
+      etatLower.includes('appareil réparé') ||
+      etatLower === 'stock mag') {
+    return 'Terminé';
+  }
+
+  // FACTURÉ - Avec mention facture
+  if (etatLower.includes('facture à faire') ||
+      etatLower.includes('facturé') ||
+      etatLower === 'facturé') {
+    return 'Facturé';
+  }
+
+  // RÉPARATION - En cours de réparation
+  if (etatLower.includes('réparation') ||
+      etatLower.includes('reparation') ||
+      etatLower === 'changement de pièces neuve') {
+    return 'Réparation';
+  }
+
+  // DIAGNOSTIC - En attente diagnostic ou pièces
+  if (etatLower.includes('attente diagnostic') ||
+      etatLower.includes('attente pièces') ||
+      etatLower.includes('attente réponse devis') ||
+      etatLower.includes('devis à faire')) {
+    return 'Diagnostic';
+  }
+
+  // PLANIFIÉ - RDV prévu
+  if (etatLower.includes('attente rdv') ||
+      etatLower.includes('attente récup') ||
+      etatLower.includes('attente relivr')) {
+    return 'Planifié';
+  }
+
+  // EN COURS - Interventions actives
+  if (etatLower.includes('en cours') ||
+      etatLower === 'installation' ||
+      etatLower.includes('demande de pièces seules en cours')) {
+    return 'En cours';
+  }
+
+  // DEMANDE - Annulés, refusés, non réparables
+  if (etatLower.includes('annulé') ||
+      etatLower.includes('refusé') ||
+      etatLower.includes('non réparable') ||
+      etatLower.includes('pièces épuisé') ||
+      etatLower.includes('défaut non constater')) {
+    return 'Demande';
+  }
+
+  // Par défaut
+  console.log(`⚠️  Statut non mappé: "${etatNotion}" → Demande`);
+  return 'Demande';
 }
 
 // Fonction pour mapper le type de réservation vers notre type d'intervention
