@@ -9,7 +9,7 @@ router.use(authMiddleware);
 // GET toutes les interventions avec filtres
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 20, statut, technicien, dateDebut, dateFin } = req.query;
+    const { page = 1, limit = 100, statut, technicien, dateDebut, dateFin } = req.query;
 
     let query = {};
     if (statut) query.statut = statut;
