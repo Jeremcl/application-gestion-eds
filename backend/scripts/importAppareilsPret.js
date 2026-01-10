@@ -176,8 +176,8 @@ async function importAppareilsPret() {
     });
     console.log('✅ MongoDB connecté');
 
-    // Chemin du fichier CSV (utiliser le fichier exemple en local)
-    const csvPath = path.join(__dirname, 'appareils-pret.exemple.csv');
+    // Chemin du fichier CSV
+    const csvPath = path.join(__dirname, 'appareils-pret.csv');
 
     // Vérifier si le fichier existe
     if (!fs.existsSync(csvPath)) {

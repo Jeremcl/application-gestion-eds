@@ -3,29 +3,25 @@
 ## 🎯 Objectif
 Importer les appareils de prêt depuis le fichier CSV Notion vers la base de données MongoDB sur le VPS.
 
-⚠️ **IMPORTANT** : Les vraies données ne sont **PAS** versionnées dans le repo.
-- En **local** : Utiliser `appareils-pret.exemple.csv` (données factices)
-- Sur le **VPS** : Uploader `appareils-pret.csv` avec les vraies données depuis Notion
-
 ---
 
 ## 📁 Fichiers préparés
 
-Les fichiers suivants sont dans le repo `backend/scripts/` :
+Les fichiers suivants sont prêts dans `backend/scripts/` :
 
-1. **appareils-pret.exemple.csv** (données factices pour développement local)
-   - Fichier CSV avec 5 exemples d'appareils
-   - Utilisé par le script local `importAppareilsPret.js`
+1. **appareils-pret.csv** (9.6 KB)
+   - Fichier CSV exporté depuis Notion
+   - Contient 54 appareils de prêt
 
 2. **importAppareilsPret.js** (script local)
    - Script d'import pour développement local
-   - Utilise `appareils-pret.exemple.csv`
    - Connexion à MongoDB local
+   - Utilise `appareils-pret.csv`
 
 3. **importAppareilsPretVPS.js** (script VPS)
    - Script d'import configuré pour le VPS
    - Connexion directe à MongoDB du VPS
-   - Utilise `appareils-pret.csv` (à uploader avec les vraies données)
+   - Utilise `appareils-pret.csv`
 
 ---
 
@@ -50,44 +46,13 @@ Si vous n'êtes pas dans le dossier `/app` :
 cd /app
 ```
 
-### Étape 3 : Uploader les fichiers
+### Étape 3 : Vérifier que les fichiers sont présents
 
-⚠️ **IMPORTANT** : Vous devez uploader le fichier CSV avec les **vraies données** depuis Notion (non versionné dans le repo).
+Les fichiers sont déjà dans le repo et seront déployés automatiquement :
+- ✅ `appareils-pret.csv` (54 appareils)
+- ✅ `importAppareilsPretVPS.js` (script d'import VPS)
 
-**Option A - Via l'interface Dokploy (Recommandé)**
-
-Si Dokploy a une fonction "Upload files" :
-1. Aller dans **Files** ou **File Manager**
-2. Naviguer vers `/app/backend/scripts/`
-3. Uploader les 2 fichiers :
-   - `appareils-pret.csv` **avec les vraies données depuis Notion** (54 appareils)
-   - `importAppareilsPretVPS.js` (déjà dans le repo, peut être utilisé directement)
-
-**Option B - Via SCP depuis votre machine locale**
-
-```bash
-# Depuis votre machine Windows (PowerShell ou Git Bash)
-scp "backend/scripts/appareils-pret.csv" user@votre-serveur:/chemin/vers/app/backend/scripts/
-scp "backend/scripts/importAppareilsPretVPS.js" user@votre-serveur:/chemin/vers/app/backend/scripts/
-```
-
-**Option C - Via copier-coller dans le terminal**
-
-Si aucune des options ci-dessus n'est disponible, créer les fichiers manuellement :
-
-```bash
-cd /app/backend/scripts/
-
-# Créer le fichier CSV (copier le contenu depuis votre machine)
-nano appareils-pret.csv
-# Coller le contenu, puis Ctrl+X, Y, Enter
-
-# Créer le script (copier le contenu depuis votre machine)
-nano importAppareilsPretVPS.js
-# Coller le contenu, puis Ctrl+X, Y, Enter
-```
-
-### Étape 4 : Vérifier que les fichiers sont bien uploadés
+Vérifier leur présence :
 
 ```bash
 ls -lh /app/backend/scripts/ | grep appareils
@@ -95,18 +60,18 @@ ls -lh /app/backend/scripts/ | grep appareils
 
 Vous devriez voir :
 ```
--rw-r--r-- 1 root root 9.6K Jan 10 14:58 appareils-pret.csv
--rw-r--r-- 1 root root 9.0K Jan 10 14:55 importAppareilsPretVPS.js
+-rw-r--r-- 1 root root 9.6K Jan 10 15:XX appareils-pret.csv
+-rw-r--r-- 1 root root 9.0K Jan 10 15:XX importAppareilsPretVPS.js
 ```
 
-### Étape 5 : Exécuter le script d'import
+### Étape 4 : Exécuter le script d'import
 
 ```bash
 cd /app/backend
 node scripts/importAppareilsPretVPS.js
 ```
 
-### Étape 6 : Observer le résultat
+### Étape 5 : Observer le résultat
 
 Le script va afficher :
 

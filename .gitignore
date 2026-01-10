@@ -38,9 +38,4 @@ Thumbs.db
 *.log
 .cache
 
-# Données réelles (ne pas versionner)
-backend/scripts/appareils-pret.csv
-backend/data/appareils-pret.csv/
-contacts.csv
-
 nul
