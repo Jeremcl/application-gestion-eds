@@ -198,7 +198,7 @@ function parseAppareilsPretCSV(csvContent) {
 async function importAppareilsPret() {
   try {
     // URL de connexion MongoDB interne VPS
-    const MONGODB_URI = 'mongodb://eds22user:wdaujzphftw0scyq@application-gestion-eds-eds22mongodb-fzzvbu:27017/eds22';
+    const MONGODB_URI = 'mongodb://eds22user:wdaujzphftw0scyq@application-gestion-eds-eds22mongodb-fzzvbu:27017/eds22?authSource=admin';
 
     // Connexion à MongoDB
     console.log('📡 Connexion à MongoDB...');
