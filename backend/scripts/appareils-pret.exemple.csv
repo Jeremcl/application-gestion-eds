@@ -1,0 +1,6 @@
+Numéro de prêt,Assigné à,Cout REE,Dernier contrôle,Documentation technique,ID Wix,Lien notice,Lien wix,Marque,Modèle,Numéro de série,PHOTOS,Photos détourées,Plaque signalétique,Prix généré ,Remarque,Statut interne,Statut publication,Type d'appareil,État général
+Prêt n°1,,,15 janvier 2025,,,https://example.com/doc1,,Samsung,WF80F5E0W2W,12345678,,,photo1.jpg,350.00€,,Dispo,Publié,Lave linge,A
+Prêt n°2,,,20 janvier 2025,,,https://example.com/doc2,,Bosch,SMV46KX01E,87654321,,,photo2.jpg,450.00€,,Dispo,Publié,Lave vaisselle,A+
+Prêt n°3,DUPONT Marie,,,,,https://example.com/doc3,,LG,GBB60PZGFS,11223344,,,photo3.jpg,,,Prêté,,Refrigérateur,A++
+Prêt n°4,,,10 janvier 2025,,,https://example.com/doc4,,Whirlpool,AWE6010,55667788,,,photo4.jpg,200.00€,,Dispo,,Lave linge,B
+Prêt n°5,,,,,,,,,,,,,,,En réparation,Maintenance,,seche linge,

@@ -3,19 +3,29 @@
 ## 🎯 Objectif
 Importer les appareils de prêt depuis le fichier CSV Notion vers la base de données MongoDB sur le VPS.
 
+⚠️ **IMPORTANT** : Les vraies données ne sont **PAS** versionnées dans le repo.
+- En **local** : Utiliser `appareils-pret.exemple.csv` (données factices)
+- Sur le **VPS** : Uploader `appareils-pret.csv` avec les vraies données depuis Notion
+
 ---
 
 ## 📁 Fichiers préparés
 
-Les fichiers suivants sont prêts dans `backend/scripts/` :
+Les fichiers suivants sont dans le repo `backend/scripts/` :
 
-1. **appareils-pret.csv** (9.6 KB)
-   - Fichier CSV exporté depuis Notion
-   - Contient 54 appareils de prêt
+1. **appareils-pret.exemple.csv** (données factices pour développement local)
+   - Fichier CSV avec 5 exemples d'appareils
+   - Utilisé par le script local `importAppareilsPret.js`
 
-2. **importAppareilsPretVPS.js** (9.0 KB)
+2. **importAppareilsPret.js** (script local)
+   - Script d'import pour développement local
+   - Utilise `appareils-pret.exemple.csv`
+   - Connexion à MongoDB local
+
+3. **importAppareilsPretVPS.js** (script VPS)
    - Script d'import configuré pour le VPS
    - Connexion directe à MongoDB du VPS
+   - Utilise `appareils-pret.csv` (à uploader avec les vraies données)
 
 ---
 
@@ -42,14 +52,16 @@ cd /app
 
 ### Étape 3 : Uploader les fichiers
 
+⚠️ **IMPORTANT** : Vous devez uploader le fichier CSV avec les **vraies données** depuis Notion (non versionné dans le repo).
+
 **Option A - Via l'interface Dokploy (Recommandé)**
 
 Si Dokploy a une fonction "Upload files" :
 1. Aller dans **Files** ou **File Manager**
 2. Naviguer vers `/app/backend/scripts/`
-3. Uploader les 2 fichiers depuis votre machine locale :
-   - `backend/scripts/appareils-pret.csv`
-   - `backend/scripts/importAppareilsPretVPS.js`
+3. Uploader les 2 fichiers :
+   - `appareils-pret.csv` **avec les vraies données depuis Notion** (54 appareils)
+   - `importAppareilsPretVPS.js` (déjà dans le repo, peut être utilisé directement)
 
 **Option B - Via SCP depuis votre machine locale**
 

@@ -176,8 +176,8 @@ async function importAppareilsPret() {
     });
     console.log('✅ MongoDB connecté');
 
-    // Chemin du fichier CSV
-    const csvPath = path.join(__dirname, '../data/appareils-pret.csv/Gestion de prêt 0be78ca132d94f8dbc1b6456122ecbe9_all.csv');
+    // Chemin du fichier CSV (utiliser le fichier exemple en local)
+    const csvPath = path.join(__dirname, 'appareils-pret.exemple.csv');
 
     // Vérifier si le fichier existe
     if (!fs.existsSync(csvPath)) {
