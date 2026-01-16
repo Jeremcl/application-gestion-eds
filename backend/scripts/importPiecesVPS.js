@@ -264,6 +264,39 @@ function generateMongoDocuments(groups) {
   return documents;
 }
 
+// Fonction pour fusionner les doublons de référence
+function mergeDuplicateReferences(documents) {
+  const merged = new Map();
+  let duplicateCount = 0;
+
+  for (const doc of documents) {
+    if (merged.has(doc.reference)) {
+      // Doublon détecté, fusionner les quantités
+      const existing = merged.get(doc.reference);
+      existing.quantiteStock += doc.quantiteStock;
+
+      // Fusionner les modèles compatibles
+      const allModels = new Set([...existing.modelesCompatibles, ...doc.modelesCompatibles]);
+      existing.modelesCompatibles = Array.from(allModels);
+
+      // Garder le premier emplacement (ou concaténer si différent)
+      if (doc.emplacement && doc.emplacement !== existing.emplacement && !existing.emplacement.includes(doc.emplacement)) {
+        existing.emplacement = existing.emplacement ? `${existing.emplacement} / ${doc.emplacement}` : doc.emplacement;
+      }
+
+      duplicateCount++;
+    } else {
+      merged.set(doc.reference, { ...doc });
+    }
+  }
+
+  if (duplicateCount > 0) {
+    console.log(`⚠️  ${duplicateCount} doublons fusionnés`);
+  }
+
+  return Array.from(merged.values());
+}
+
 // Fonction de validation
 function validateDocuments(documents) {
   const errors = [];
@@ -360,7 +393,12 @@ async function importPieces() {
 
     // 5. Génération des documents MongoDB
     console.log('\n🔨 Génération des documents...');
-    const documents = generateMongoDocuments(groupedPieces);
+    let documents = generateMongoDocuments(groupedPieces);
+
+    // 5.5. Fusion des doublons de référence
+    console.log('\n🔀 Fusion des doublons...');
+    documents = mergeDuplicateReferences(documents);
+    console.log(`✅ ${documents.length} documents uniques après fusion`);
 
     // 6. Validation
     console.log('\n🔍 Validation...');
