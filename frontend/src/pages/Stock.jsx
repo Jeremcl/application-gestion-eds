@@ -1,27 +1,37 @@
 import { useState, useEffect } from 'react';
-import { Plus, AlertTriangle, Package, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, AlertTriangle, Package, Search, Edit, Eye } from 'lucide-react';
 import { pieces as piecesAPI } from '../services/api';
+import PieceModal from '../components/PieceModal';
 
 const Stock = () => {
+  const navigate = useNavigate();
   const [pieces, setPieces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAlertes, setShowAlertes] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [alertesCount, setAlertesCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [showPieceModal, setShowPieceModal] = useState(false);
+  const [editingPiece, setEditingPiece] = useState(null);
 
   useEffect(() => {
     loadPieces();
-  }, [showAlertes, searchTerm]);
+  }, [showAlertes, searchTerm, currentPage]);
 
   const loadPieces = async () => {
     setLoading(true);
     try {
       const params = {
+        page: currentPage,
+        limit: 20,
         search: searchTerm,
         stockCritique: showAlertes
       };
       const { data } = await piecesAPI.getAll(params);
       setPieces(data.pieces);
+      setTotalPages(data.totalPages || 1);
 
       // Charger le nombre d'alertes
       const { data: alertesData } = await piecesAPI.getAlertes();
@@ -31,6 +41,22 @@ const Stock = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (piece, e) => {
+    if (e) e.stopPropagation();
+    setEditingPiece(piece);
+    setShowPieceModal(true);
+  };
+
+  const handleView = (pieceId, e) => {
+    if (e) e.stopPropagation();
+    navigate(`/stock/${pieceId}`);
+  };
+
+  const handleNewPiece = () => {
+    setEditingPiece(null);
+    setShowPieceModal(true);
   };
 
   const getStockStatus = (piece) => {
@@ -46,7 +72,7 @@ const Stock = () => {
           <h1 className="page-title">Stock Pièces Détachées</h1>
           <p className="page-subtitle">{pieces.length} pièce(s) en stock</p>
         </div>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={handleNewPiece}>
           <Plus size={18} />
           Nouvelle Pièce
         </button>
@@ -124,13 +150,18 @@ const Stock = () => {
                 <th>Prix Achat</th>
                 <th>Prix Vente</th>
                 <th>Fournisseur</th>
+                <th style={{ width: '100px', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {pieces.map((piece) => {
                 const stockStatus = getStockStatus(piece);
                 return (
-                  <tr key={piece._id}>
+                  <tr
+                    key={piece._id}
+                    onClick={(e) => handleView(piece._id, e)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
                       {piece.reference}
                     </td>
@@ -181,11 +212,59 @@ const Stock = () => {
                     <td style={{ fontSize: '0.875rem' }}>
                       {piece.fournisseur || '-'}
                     </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'center' }}>
+                        <button
+                          onClick={(e) => handleView(piece._id, e)}
+                          className="btn-icon btn-icon-sm"
+                          title="Voir les détails"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => handleEdit(piece, e)}
+                          className="btn-icon btn-icon-sm"
+                          title="Modifier"
+                        >
+                          <Edit size={16} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+              padding: 'var(--space-6) 0',
+              borderTop: '1px solid var(--neutral-200)'
+            }}>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="btn btn-secondary btn-sm"
+              >
+                Précédent
+              </button>
+              <span style={{ fontSize: '0.875rem', color: 'var(--neutral-600)' }}>
+                Page {currentPage} sur {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="btn btn-secondary btn-sm"
+              >
+                Suivant
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -223,6 +302,22 @@ const Stock = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal création/édition */}
+      {showPieceModal && (
+        <PieceModal
+          piece={editingPiece}
+          onClose={() => {
+            setShowPieceModal(false);
+            setEditingPiece(null);
+          }}
+          onSave={() => {
+            loadPieces();
+            setShowPieceModal(false);
+            setEditingPiece(null);
+          }}
+        />
+      )}
     </div>
   );
 };

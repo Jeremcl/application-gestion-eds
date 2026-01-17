@@ -9,6 +9,7 @@ import DeviceDetail from './pages/DeviceDetail';
 import Interventions from './pages/Interventions';
 import InterventionDetail from './pages/InterventionDetail';
 import Stock from './pages/Stock';
+import PieceDetail from './pages/PieceDetail';
 import Facturation from './pages/Facturation';
 import AppareilsPret from './pages/AppareilsPret';
 import AppareilPretDetail from './pages/AppareilPretDetail';
@@ -97,6 +98,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Layout>
               <Stock />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/stock/:pieceId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <PieceDetail />
             </Layout>
           </ProtectedRoute>
         }
