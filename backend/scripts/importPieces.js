@@ -20,9 +20,9 @@ function loadTypesMapping() {
       .pipe(csv({ separator: ',' }))
       .on('data', (row) => {
         // Format: "Type de pièce,""Numéro"""
-        // Les données sont dans la première colonne
+        // Après parsing CSV, les "" deviennent "
         const firstCol = Object.values(row)[0] || '';
-        const match = firstCol.match(/^(.+),""(\d+)""$/);
+        const match = firstCol.match(/^(.+),"(\d+)"$/);
 
         if (match) {
           const type = match[1].trim();
@@ -47,8 +47,9 @@ function loadMarquesMapping() {
       .pipe(csv({ separator: ',' }))
       .on('data', (row) => {
         // Format: "Marque,""Numéro"""
+        // Après parsing CSV, les "" deviennent "
         const firstCol = Object.values(row)[0] || '';
-        const match = firstCol.match(/^(.+),""(\d+)""$/);
+        const match = firstCol.match(/^(.+),"(\d+)"$/);
 
         if (match) {
           const marque = match[1].trim();

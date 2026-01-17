@@ -68,7 +68,8 @@ function loadTypesMapping() {
       .pipe(csv({ separator: ',' }))
       .on('data', (row) => {
         const firstCol = Object.values(row)[0] || '';
-        const match = firstCol.match(/^(.+),""(\d+)""$/);
+        // Après parsing CSV, les "" deviennent "
+        const match = firstCol.match(/^(.+),"(\d+)"$/);
 
         if (match) {
           const type = match[1].trim();
@@ -93,7 +94,8 @@ function loadMarquesMapping() {
       .pipe(csv({ separator: ',' }))
       .on('data', (row) => {
         const firstCol = Object.values(row)[0] || '';
-        const match = firstCol.match(/^(.+),""(\d+)""$/);
+        // Après parsing CSV, les "" deviennent "
+        const match = firstCol.match(/^(.+),"(\d+)"$/);
 
         if (match) {
           const marque = match[1].trim();
