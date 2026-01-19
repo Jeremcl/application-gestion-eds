@@ -3,9 +3,9 @@
 // MODE PROD : Real API (MongoDB requis)
 
 // Pour développer en local sans MongoDB
-export * from './apiMock';
+// export * from './apiMock';
 
 // Pour utiliser l'API réelle (décommentez au-dessus et commentez ci-dessous)
-// export * from './apiReal';
+export * from './apiReal';
 
-console.log('📡 API Mode: MOCK (Development) - No MongoDB needed');
+console.log('📡 API Mode: REAL (Production) - MongoDB required');

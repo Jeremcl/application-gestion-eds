@@ -369,7 +369,7 @@ export const factures = {
 // même en mode Mock, pour avoir des réponses vraiment conversationnelles
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 // Instance axios pour les appels AI uniquement
 const aiApi = axios.create({
