@@ -6,6 +6,7 @@ const Intervention = require('../models/Intervention');
 const Client = require('../models/Client');
 const Piece = require('../models/Piece');
 const Facture = require('../models/Facture');
+const AppareilPret = require('../models/AppareilPret');
 const authMiddleware = require('../middleware/auth');
 
 router.use(authMiddleware);
@@ -66,6 +67,17 @@ const getApplicationContext = async () => {
       { $group: { _id: null, total: { $sum: { $multiply: ['$quantiteStock', '$prixAchat'] } } } }
     ]);
 
+    // ========== APPAREILS DE PRÊT ==========
+    const totalAppareilsPret = await AppareilPret.countDocuments();
+    const appareilsDisponibles = await AppareilPret.countDocuments({ statut: 'Disponible' });
+    const appareilsPretes = await AppareilPret.countDocuments({ statut: 'Prêté' });
+    const appareilsMaintenance = await AppareilPret.countDocuments({ statut: 'En maintenance' });
+
+    const derniersAppareilsPret = await AppareilPret.find({ statut: 'Prêté' })
+      .sort({ dateModification: -1 })
+      .limit(5)
+      .select('reference type marque modele statut');
+
     // ========== CLIENTS ==========
     const totalClients = await Client.countDocuments();
     const derniersClients = await Client.find().sort({ dateCreation: -1 }).limit(5)
@@ -105,7 +117,11 @@ const getApplicationContext = async () => {
         totalPieces,
         valeurStock: valeurStock.length > 0 ? valeurStock[0].total.toFixed(2) : 0,
         facturesEnAttente,
-        facturesPayees
+        facturesPayees,
+        totalAppareilsPret,
+        appareilsDisponibles,
+        appareilsPretes,
+        appareilsMaintenance
       },
       parStatut,
       parType,
@@ -114,7 +130,8 @@ const getApplicationContext = async () => {
       piecesEnAlerte,
       derniersClients,
       dernieresInterventions,
-      interventionsUrgentes
+      interventionsUrgentes,
+      derniersAppareilsPret
     };
   } catch (error) {
     console.error('Erreur récupération contexte:', error);
@@ -122,8 +139,97 @@ const getApplicationContext = async () => {
   }
 };
 
+// Système de détection d'intention
+const detectIntent = (message) => {
+  const msg = message.toLowerCase();
+
+  // Créer une intervention
+  if (msg.match(/cr[ée]e|ajoute|nouvelle.*intervention|planifier|planifie/)) {
+    return { action: 'CREATE_INTERVENTION', confidence: 0.8 };
+  }
+
+  // Rechercher un client
+  if (msg.match(/cherche|trouve|recherche.*client|qui est|connais.*client/)) {
+    return { action: 'SEARCH_CLIENT', confidence: 0.7 };
+  }
+
+  // Modifier stock
+  if (msg.match(/augmente|diminue|modifie.*stock|ajoute.*pi[èe]ces|retire.*pi[èe]ces/)) {
+    return { action: 'UPDATE_STOCK', confidence: 0.8 };
+  }
+
+  // Salutations
+  if (msg.match(/^(salut|bonjour|hello|hey|coucou|hi|bonsoir)$/)) {
+    return { action: 'GREETING', confidence: 1.0 };
+  }
+
+  // Analyse / Question
+  return { action: 'QUERY', confidence: 1.0 };
+};
+
+// Fonctions d'action
+const executeAction = async (intent, message, context, req) => {
+  switch (intent.action) {
+    case 'GREETING':
+      const userName = req.user?.nom || 'Admin';
+      return {
+        success: true,
+        message: `Bonjour ${userName} ! 👋\n\nJe suis l'assistant IA d'EDS22. Je peux vous aider à :\n\n✅ Consulter les statistiques de l'entreprise\n✅ Analyser les interventions et identifier les urgences\n✅ Vérifier le stock et les alertes\n✅ Rechercher des clients ou des appareils\n✅ Créer des interventions (bientôt disponible)\n\nQue puis-je faire pour vous aujourd'hui ?`
+      };
+
+    case 'CREATE_INTERVENTION':
+      return {
+        success: false,
+        message: `🚧 **Fonctionnalité en développement**\n\nLa création d'interventions via l'assistant arrive prochainement !\n\nPour le moment, vous pouvez :\n• Utiliser le bouton "Nouvelle intervention" dans l'interface\n• Me poser des questions sur vos interventions existantes\n• Analyser les interventions urgentes\n\nSouhaitez-vous que je vous aide avec quelque chose d'autre ?`
+      };
+
+    case 'SEARCH_CLIENT':
+      // Extraire le nom du client de la question
+      const nameMatch = message.match(/(?:client|cherche|trouve|recherche)\s+(\w+)/i);
+      if (nameMatch) {
+        const searchName = nameMatch[1];
+        const clients = await Client.find({
+          $or: [
+            { nom: new RegExp(searchName, 'i') },
+            { prenom: new RegExp(searchName, 'i') }
+          ]
+        }).limit(5).select('nom prenom telephone ville email');
+
+        if (clients.length > 0) {
+          const clientList = clients.map(c =>
+            `• **${c.nom} ${c.prenom}**\n  📞 ${c.telephone}\n  📍 ${c.ville}${c.email ? `\n  ✉️ ${c.email}` : ''}`
+          ).join('\n\n');
+
+          return {
+            success: true,
+            message: `📋 **Clients trouvés (${clients.length})** :\n\n${clientList}`
+          };
+        } else {
+          return {
+            success: false,
+            message: `❌ Aucun client trouvé avec le nom "${searchName}".\n\nVoulez-vous que je liste les derniers clients enregistrés ?`
+          };
+        }
+      }
+
+      return {
+        success: false,
+        message: `🔍 Pour rechercher un client, précisez son nom.\n\nExemple : "Recherche le client Dupont"`
+      };
+
+    case 'UPDATE_STOCK':
+      return {
+        success: false,
+        message: `🚧 **Fonctionnalité en développement**\n\nLa modification du stock via l'assistant arrive prochainement !\n\nPour le moment, vous pouvez :\n• Consulter l'état du stock actuel\n• Voir les pièces en alerte\n• Modifier le stock via la page Stock\n\nSouhaitez-vous que je vous donne l'état du stock ?`
+      };
+
+    default:
+      return null; // Laisser Gemini répondre
+  }
+};
+
 // Fonction pour générer une réponse avec OpenRouter
-const generateAIResponse = async (userMessage, conversationHistory, context) => {
+const generateAIResponse = async (userMessage, conversationHistory, context, req) => {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
   if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'ta_clé_openrouter_ici') {
@@ -131,8 +237,20 @@ const generateAIResponse = async (userMessage, conversationHistory, context) => 
     return "⚠️ L'assistant IA n'est pas encore configuré. Veuillez ajouter votre clé OpenRouter dans le fichier .env du backend.";
   }
 
+  // Détecter l'intention
+  const intent = detectIntent(userMessage);
+  console.log('🎯 Intention détectée:', intent);
+
+  // Si intention spécifique, exécuter l'action
+  if (intent.confidence >= 0.7 && intent.action !== 'QUERY') {
+    const actionResult = await executeAction(intent, userMessage, context, req);
+    if (actionResult) {
+      return actionResult.message;
+    }
+  }
+
   try {
-    // Construire le prompt système enrichi
+    // Construire le prompt système enrichi avec appareils de prêt
     const systemPrompt = `Tu es l'assistant IA intelligent d'EDS22, une entreprise de réparation d'électroménager basée à Guingamp (22200).
 
 ═══════════════════════════════════════════════════════════════
@@ -149,8 +267,8 @@ L'APPLICATION GÈRE 5 MODULES PRINCIPAUX :
 
 2. 🔧 INTERVENTIONS
    - Cycle de vie complet : Demande → Planifié → En cours → Diagnostic → Réparation → Terminé → Facturé
-   - Types : Réparation, Dépannage, Entretien, Devis, Installation
-   - Assignation aux techniciens (Jérémy, Stéphane, etc.)
+   - Types : Atelier, Domicile
+   - Assignation aux techniciens (Jérémy, Stéphane, Anne Laure)
    - Suivi détaillé avec pièces utilisées et main d'œuvre
 
 3. 📦 STOCK & PIÈCES DÉTACHÉES
@@ -159,14 +277,15 @@ L'APPLICATION GÈRE 5 MODULES PRINCIPAUX :
    - Alertes automatiques si stock < minimum
    - Prix d'achat et prix de vente
 
-4. 💰 FACTURATION
+4. 🏠 APPAREILS DE PRÊT
+   - Gestion des appareils prêtés aux clients pendant les réparations
+   - Statuts : Disponible, Prêté, En maintenance
+   - Suivi des retours et disponibilités
+
+5. 💰 FACTURATION
    - Génération automatique de factures depuis les interventions
    - Statuts : En attente, Payée, Annulée
    - Suivi des paiements
-
-5. 🏠 APPAREILS DE PRÊT
-   - Gestion des appareils prêtés aux clients pendant les réparations
-   - Suivi des retours et disponibilités
 
 ═══════════════════════════════════════════════════════════════
 📊 DONNÉES EN TEMPS RÉEL (${new Date().toLocaleDateString('fr-FR')})
@@ -182,6 +301,13 @@ L'APPLICATION GÈRE 5 MODULES PRINCIPAUX :
 • Valeur totale du stock : ${context.stats.valeurStock}€
 • Factures en attente de paiement : ${context.stats.facturesEnAttente}
 • Factures payées ce mois : ${context.stats.facturesPayees}
+
+🏠 APPAREILS DE PRÊT :
+• Total appareils : ${context.stats.totalAppareilsPret}
+• Disponibles : ${context.stats.appareilsDisponibles}
+• Prêtés actuellement : ${context.stats.appareilsPretes}
+• En maintenance : ${context.stats.appareilsMaintenance}
+${context.derniersAppareilsPret.length > 0 ? `\nAppareils prêtés :\n${context.derniersAppareilsPret.map(a => `• ${a.type} ${a.marque} ${a.modele} (Ref: ${a.reference})`).join('\n')}` : ''}
 
 📍 RÉPARTITION PAR STATUT :
 ${context.parStatut.map(s => `• ${s._id || 'Non défini'} : ${s.count} intervention(s)`).join('\n')}
@@ -215,59 +341,47 @@ ${context.interventionsUrgentes.map(i => `• ${i.numero} - ${i.description} [${
 🎯 TES CAPACITÉS & INSTRUCTIONS
 ═══════════════════════════════════════════════════════════════
 
-MODE ACTUEL : LECTURE SEULE (Consultation uniquement)
-
 TU PEUX :
+✅ Répondre de manière conversationnelle et naturelle
+✅ Comprendre les questions en langage familier
 ✅ Analyser les statistiques et identifier les tendances
-✅ Répondre aux questions sur les interventions, clients, stock
+✅ Répondre aux questions sur les interventions, clients, stock, appareils de prêt
 ✅ Calculer des métriques (taux, moyennes, totaux)
 ✅ Détecter les problèmes (stock faible, interventions urgentes, surcharge technicien)
 ✅ Donner des recommandations basées sur les données réelles
 ✅ Faire des comparaisons et des analyses croisées
-✅ Répondre aux salutations de manière chaleureuse et professionnelle
+✅ Rechercher des clients par nom
+✅ Répondre aux salutations de manière chaleureuse
 
 TU NE PEUX PAS (ENCORE) :
-❌ Créer, modifier ou supprimer des données
-❌ Effectuer des actions dans l'application
-→ Si demandé, explique que cette fonctionnalité arrive prochainement
-
-═══════════════════════════════════════════════════════════════
-📖 EXEMPLES DE RAISONNEMENT
-═══════════════════════════════════════════════════════════════
-
-Exemple 1 - Salutation :
-Q: "Salut"
-R: "Bonjour ! 👋 Je suis l'assistant intelligent d'EDS22. Comment puis-je vous aider aujourd'hui ? Je peux vous donner des statistiques, analyser vos interventions, vérifier votre stock ou répondre à toute question sur l'activité de l'entreprise."
-
-Exemple 2 - Analyse de charge :
-Q: "Quel technicien est le plus chargé ?"
-R: Analyser context.parTechnicien, identifier celui avec le plus d'interventions, donner le nombre exact et suggérer une répartition si déséquilibrée
-
-Exemple 3 - Analyse financière :
-Q: "Comment va le CA ?"
-R: Analyser context.stats.caMensuel, comparer avec le nombre d'interventions, calculer le panier moyen si possible, donner un avis contextualisé
-
-Exemple 4 - Stock critique :
-Q: "Des problèmes de stock ?"
-R: Si context.stats.stockCritique > 0, lister les pièces concernées avec recommandation de commande urgente. Sinon, confirmer que tout va bien.
+❌ Créer, modifier ou supprimer des données directement
+→ Si demandé, explique poliment que cette fonctionnalité arrive prochainement
 
 ═══════════════════════════════════════════════════════════════
 💡 DIRECTIVES DE RÉPONSE
 ═══════════════════════════════════════════════════════════════
 
-1. PRÉCISION : Base-toi UNIQUEMENT sur les données réelles ci-dessus
-2. CONCISION : Réponds en 2-4 phrases maximum sauf si plus de détails sont demandés
-3. CLARTÉ : Utilise des emojis pour structurer (📊 📈 ⚠️ ✅ etc.)
-4. PROACTIVITÉ : Si tu détectes un problème dans les données, mentionne-le
-5. CONTEXTE : Relie les données entre elles pour donner du sens
-6. TON : Professionnel mais accessible, comme un vrai collègue expert
+1. CONVERSATIONNEL : Réponds comme un collègue expert, pas comme un robot
+2. PRÉCISION : Base-toi UNIQUEMENT sur les données réelles ci-dessus
+3. CONCISION : Réponds en 2-5 phrases sauf si plus de détails sont demandés
+4. CLARTÉ : Utilise des emojis pour structurer (📊 📈 ⚠️ ✅ etc.)
+5. PROACTIVITÉ : Si tu détectes un problème dans les données, mentionne-le
+6. CONTEXTE : Relie les données entre elles pour donner du sens
+7. NATUREL : Accepte les questions mal formulées, familières, incomplètes
+8. TON : Professionnel mais accessible, chaleureux
+
+EXEMPLES DE COMPRÉHENSION :
+• "Y'a combien d'interventions ?" → Comprendre : stats interventions
+• "C'est qui le plus chargé ?" → Comprendre : analyse par technicien
+• "On a des trucs en rupture ?" → Comprendre : stock critique
+• "Le CA du mois ?" → Comprendre : chiffre d'affaires mensuel
 
 Réponds maintenant à la question de l'utilisateur :`;
 
     // Préparer l'historique des messages pour l'API
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...conversationHistory.map(msg => ({
+      ...conversationHistory.slice(-10).map(msg => ({
         role: msg.role,
         content: msg.content
       })),
@@ -276,14 +390,14 @@ Réponds maintenant à la question de l'utilisateur :`;
 
     console.log('🤖 Envoi requête à OpenRouter...');
 
-    // Appel à l'API OpenRouter avec Gemini 2.0 Flash (meilleur modèle gratuit)
+    // Appel à l'API OpenRouter avec Gemini 2.0 Flash
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: 'google/gemini-2.0-flash-exp:free', // Gemini 2.0 Flash - Meilleur que Llama, toujours gratuit
+        model: 'google/gemini-2.0-flash-exp:free',
         messages: messages,
         temperature: 0.7,
-        max_tokens: 1000 // Augmenté pour des réponses plus détaillées
+        max_tokens: 1500
       },
       {
         headers: {
@@ -308,6 +422,7 @@ Réponds maintenant à la question de l'utilisateur :`;
     return `Je suis désolé, je rencontre un problème technique. Voici ce que je peux vous dire :
 
 📊 Stats du mois : ${context.stats.interventionsMois} interventions, ${context.stats.caMensuel}€ de CA
+🏠 Appareils de prêt : ${context.stats.appareilsDisponibles} disponibles, ${context.stats.appareilsPretes} prêtés
 ${context.stats.stockCritique > 0 ? `⚠️ ${context.stats.stockCritique} pièce(s) en stock critique` : '✅ Stock OK'}
 ${context.interventionsUrgentes.length > 0 ? `🚨 ${context.interventionsUrgentes.length} intervention(s) urgente(s)` : ''}
 
@@ -352,8 +467,9 @@ router.post('/chat', async (req, res) => {
     // Générer la réponse de l'assistant avec OpenRouter
     const assistantResponse = await generateAIResponse(
       message,
-      conversation.messages.slice(-10), // Garder seulement les 10 derniers messages pour le contexte
-      context
+      conversation.messages,
+      context,
+      req
     );
 
     // Ajouter la réponse de l'assistant
@@ -361,7 +477,7 @@ router.post('/chat', async (req, res) => {
       role: 'assistant',
       content: assistantResponse,
       timestamp: new Date(),
-      contexte: context.stats // Sauvegarder les stats au moment de la réponse
+      contexte: context.stats
     });
 
     conversation.derniereActivite = new Date();
