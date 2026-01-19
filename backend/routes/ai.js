@@ -11,7 +11,74 @@ const authMiddleware = require('../middleware/auth');
 
 router.use(authMiddleware);
 
-// Fonction pour récupérer toutes les données de contexte de l'application
+// ========== FONCTIONS UTILITAIRES D'EXTRACTION ==========
+
+// Extraire une date du message
+const extractDate = (message) => {
+  const msg = message.toLowerCase();
+
+  // Mois spécifiques
+  const moisMap = {
+    'janvier': 0, 'février': 1, 'mars': 2, 'avril': 3, 'mai': 4, 'juin': 5,
+    'juillet': 6, 'août': 7, 'septembre': 8, 'octobre': 9, 'novembre': 10, 'décembre': 11
+  };
+
+  // Chercher "en juin 2024", "juin 2024", etc.
+  for (const [mois, index] of Object.entries(moisMap)) {
+    if (msg.includes(mois)) {
+      const yearMatch = msg.match(/202[0-9]/);
+      const year = yearMatch ? parseInt(yearMatch[0]) : new Date().getFullYear();
+      return {
+        start: new Date(year, index, 1),
+        end: new Date(year, index + 1, 0, 23, 59, 59)
+      };
+    }
+  }
+
+  // Chercher "2024", "en 2023", etc.
+  const yearOnlyMatch = msg.match(/(?:en |année )?202[0-9]/);
+  if (yearOnlyMatch) {
+    const year = parseInt(yearOnlyMatch[0].replace(/[^0-9]/g, ''));
+    return {
+      start: new Date(year, 0, 1),
+      end: new Date(year, 11, 31, 23, 59, 59)
+    };
+  }
+
+  return null;
+};
+
+// Extraire un nom de personne
+const extractName = (message) => {
+  // Patterns courants
+  const patterns = [
+    /(?:client|technicien|pour)\s+([A-ZÉÈÊËÀÂÔÛÇ][a-zéèêëàâôûç]+(?:\s+[A-ZÉÈÊËÀÂÔÛÇ][a-zéèêëàâôûç]+)?)/,
+    /([A-ZÉÈÊËÀÂÔÛÇ][a-zéèêëàâôûç]+(?:\s+[A-ZÉÈÊËÀÂÔÛÇ][a-zéèêëàâôûç]+)?)/
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match) return match[1];
+  }
+
+  return null;
+};
+
+// Extraire une référence/numéro
+const extractReference = (message) => {
+  // INT-2024-0123, FAC-2024-0045, etc.
+  const refMatch = message.match(/([A-Z]{3}-202[0-9]-[0-9]{4})/);
+  if (refMatch) return refMatch[1];
+
+  // Numéros simples
+  const numMatch = message.match(/(?:numéro|n°|num|#)\s*([0-9]+)/i);
+  if (numMatch) return numMatch[1];
+
+  return null;
+};
+
+// ========== CONTEXTE APPLICATION ==========
+
 const getApplicationContext = async () => {
   try {
     const today = new Date();
@@ -26,24 +93,20 @@ const getApplicationContext = async () => {
       statut: { $in: ['En cours', 'Diagnostic', 'Réparation'] }
     });
 
-    // Répartition par statut
     const parStatut = await Intervention.aggregate([
       { $group: { _id: '$statut', count: { $sum: 1 } } }
     ]);
 
-    // Répartition par type
     const parType = await Intervention.aggregate([
       { $group: { _id: '$typeIntervention', count: { $sum: 1 } } }
     ]);
 
-    // Répartition par technicien
     const parTechnicien = await Intervention.aggregate([
       { $match: { technicien: { $ne: null } } },
       { $group: { _id: '$technicien', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
 
-    // CA du mois
     const caResult = await Intervention.aggregate([
       { $match: { dateCreation: { $gte: monthStart }, statut: 'Facturé' } },
       { $group: { _id: null, total: { $sum: '$coutTotal' } } }
@@ -139,9 +202,34 @@ const getApplicationContext = async () => {
   }
 };
 
-// Système de détection d'intention
+// ========== DÉTECTION D'INTENTION AMÉLIORÉE ==========
+
 const detectIntent = (message) => {
   const msg = message.toLowerCase();
+
+  // Recherche d'intervention spécifique
+  if (msg.match(/(?:trouve|cherche|montre|affiche|liste).*intervention/i) ||
+      msg.match(/intervention.*(?:de|du|pour|chez)/i) ||
+      msg.match(/INT-202[0-9]/)) {
+    return { action: 'SEARCH_INTERVENTION', confidence: 0.9 };
+  }
+
+  // Recherche de pièce spécifique
+  if (msg.match(/(?:trouve|cherche|montre|affiche).*pi[èe]ce/i) ||
+      msg.match(/pi[èe]ce.*(?:référence|ref|marque)/i)) {
+    return { action: 'SEARCH_PIECE', confidence: 0.9 };
+  }
+
+  // Recherche de facture
+  if (msg.match(/(?:trouve|cherche|montre|affiche).*facture/i) ||
+      msg.match(/FAC-202[0-9]/)) {
+    return { action: 'SEARCH_FACTURE', confidence: 0.9 };
+  }
+
+  // Recherche d'appareil de prêt
+  if (msg.match(/(?:trouve|cherche|montre|affiche).*appareil.*pr[êe]t/i)) {
+    return { action: 'SEARCH_APPAREIL_PRET', confidence: 0.9 };
+  }
 
   // Créer une intervention
   if (msg.match(/cr[ée]e|ajoute|nouvelle.*intervention|planifier|planifie/)) {
@@ -149,7 +237,7 @@ const detectIntent = (message) => {
   }
 
   // Rechercher un client
-  if (msg.match(/cherche|trouve|recherche.*client|qui est|connais.*client/)) {
+  if (msg.match(/(?:cherche|trouve|recherche).*client|qui est.*client|connais.*client/)) {
     return { action: 'SEARCH_CLIENT', confidence: 0.7 };
   }
 
@@ -167,33 +255,262 @@ const detectIntent = (message) => {
   return { action: 'QUERY', confidence: 1.0 };
 };
 
-// Fonctions d'action
+// ========== FONCTIONS D'ACTION COMPLÈTES ==========
+
 const executeAction = async (intent, message, context, req) => {
   switch (intent.action) {
     case 'GREETING':
       const userName = req.user?.nom || 'Admin';
       return {
         success: true,
-        message: `Bonjour ${userName} ! 👋\n\nJe suis l'assistant IA d'EDS22. Je peux vous aider à :\n\n✅ Consulter les statistiques de l'entreprise\n✅ Analyser les interventions et identifier les urgences\n✅ Vérifier le stock et les alertes\n✅ Rechercher des clients ou des appareils\n✅ Créer des interventions (bientôt disponible)\n\nQue puis-je faire pour vous aujourd'hui ?`
+        message: `Bonjour ${userName} ! 👋\n\nJe suis l'assistant IA d'EDS22. Je peux vous aider à :\n\n✅ Rechercher des interventions, clients, pièces, factures\n✅ Consulter les statistiques de l'entreprise\n✅ Analyser les interventions et identifier les urgences\n✅ Vérifier le stock et les alertes\n✅ Accéder à TOUTES les données historiques\n\nExemples de requêtes :\n• "Trouve l'intervention du client Dupont en juin 2024"\n• "Liste les pièces WHIRLPOOL"\n• "Combien d'interventions a fait Jérémy en 2024 ?"\n\nQue puis-je faire pour vous aujourd'hui ?`
       };
+
+    case 'SEARCH_INTERVENTION':
+      const dateRange = extractDate(message);
+      const clientName = extractName(message);
+      const refIntervention = extractReference(message);
+      const technicienName = message.match(/technicien\s+(\w+)/i)?.[1];
+
+      // Construire la requête MongoDB
+      const queryIntervention = {};
+
+      if (refIntervention) {
+        queryIntervention.numero = new RegExp(refIntervention, 'i');
+      }
+
+      if (dateRange) {
+        queryIntervention.dateCreation = { $gte: dateRange.start, $lte: dateRange.end };
+      }
+
+      if (technicienName) {
+        queryIntervention.technicien = new RegExp(technicienName, 'i');
+      }
+
+      // Si client mentionné, chercher d'abord le client
+      let clientIds = [];
+      if (clientName) {
+        const clients = await Client.find({
+          $or: [
+            { nom: new RegExp(clientName, 'i') },
+            { prenom: new RegExp(clientName, 'i') }
+          ]
+        }).select('_id');
+        clientIds = clients.map(c => c._id);
+        if (clientIds.length > 0) {
+          queryIntervention.clientId = { $in: clientIds };
+        }
+      }
+
+      console.log('🔍 Recherche interventions avec:', queryIntervention);
+
+      const interventions = await Intervention.find(queryIntervention)
+        .sort({ dateCreation: -1 })
+        .limit(20)
+        .populate('clientId', 'nom prenom telephone ville')
+        .select('numero description statut dateCreation technicien typeIntervention coutTotal appareil');
+
+      if (interventions.length > 0) {
+        const interventionList = interventions.map(i =>
+          `• **${i.numero}**\n` +
+          `  📅 ${new Date(i.dateCreation).toLocaleDateString('fr-FR')}\n` +
+          `  👤 ${i.clientId?.nom || 'N/A'} ${i.clientId?.prenom || ''} (${i.clientId?.ville || 'N/A'})\n` +
+          `  🔧 ${i.description.substring(0, 80)}${i.description.length > 80 ? '...' : ''}\n` +
+          `  📊 Statut: ${i.statut}${i.technicien ? ` | Tech: ${i.technicien}` : ''}${i.coutTotal ? ` | ${i.coutTotal}€` : ''}`
+        ).join('\n\n');
+
+        return {
+          success: true,
+          message: `🔍 **${interventions.length} intervention(s) trouvée(s)** :\n\n${interventionList}${interventions.length === 20 ? '\n\n_Affichage limité aux 20 premières. Précisez votre recherche pour affiner les résultats._' : ''}`
+        };
+      } else {
+        return {
+          success: false,
+          message: `❌ Aucune intervention trouvée avec ces critères.\n\nEssayez de reformuler votre recherche ou donnez plus de détails.`
+        };
+      }
+
+    case 'SEARCH_PIECE':
+      const refPiece = message.match(/(?:référence|ref)\s+(\S+)/i)?.[1] || message.match(/([0-9A-Z]{5,})/)?.[1];
+      const marquePiece = message.match(/(?:marque)\s+(\w+)/i)?.[1];
+      const designationPiece = message.match(/(?:désignation|type)\s+(\w+)/i)?.[1];
+
+      const queryPiece = { actif: true };
+
+      if (refPiece) {
+        queryPiece.reference = new RegExp(refPiece, 'i');
+      }
+
+      if (marquePiece) {
+        queryPiece.marque = new RegExp(marquePiece, 'i');
+      }
+
+      if (designationPiece) {
+        queryPiece.designation = new RegExp(designationPiece, 'i');
+      }
+
+      // Si aucun critère spécifique, chercher dans le message
+      if (!refPiece && !marquePiece && !designationPiece) {
+        const searchTerm = message.replace(/(?:trouve|cherche|montre|affiche|liste|pi[èe]ce)/gi, '').trim();
+        if (searchTerm) {
+          queryPiece.$or = [
+            { reference: new RegExp(searchTerm, 'i') },
+            { marque: new RegExp(searchTerm, 'i') },
+            { designation: new RegExp(searchTerm, 'i') }
+          ];
+        }
+      }
+
+      console.log('🔍 Recherche pièces avec:', queryPiece);
+
+      const pieces = await Piece.find(queryPiece)
+        .limit(15)
+        .select('reference designation marque quantiteStock quantiteMinimum prixAchat prixVente emplacement');
+
+      if (pieces.length > 0) {
+        const pieceList = pieces.map(p => {
+          const stockStatus = p.quantiteStock === 0 ? '🔴' : p.quantiteStock < p.quantiteMinimum ? '🟡' : '🟢';
+          return `• **${p.reference}** ${stockStatus}\n` +
+            `  📦 ${p.designation}\n` +
+            `  🏭 ${p.marque || 'N/A'}\n` +
+            `  📊 Stock: ${p.quantiteStock}/${p.quantiteMinimum} | Emplacement: ${p.emplacement || 'N/A'}\n` +
+            `  💰 Achat: ${p.prixAchat.toFixed(2)}€ | Vente: ${p.prixVente.toFixed(2)}€`;
+        }).join('\n\n');
+
+        return {
+          success: true,
+          message: `🔍 **${pieces.length} pièce(s) trouvée(s)** :\n\n${pieceList}${pieces.length === 15 ? '\n\n_Affichage limité aux 15 premières. Précisez votre recherche pour affiner les résultats._' : ''}`
+        };
+      } else {
+        return {
+          success: false,
+          message: `❌ Aucune pièce trouvée avec ces critères.\n\nEssayez de chercher par référence, marque ou désignation.`
+        };
+      }
+
+    case 'SEARCH_FACTURE':
+      const refFacture = extractReference(message);
+      const dateRangeFacture = extractDate(message);
+      const clientNameFacture = extractName(message);
+
+      const queryFacture = {};
+
+      if (refFacture) {
+        queryFacture.numeroFacture = new RegExp(refFacture, 'i');
+      }
+
+      if (dateRangeFacture) {
+        queryFacture.dateFacture = { $gte: dateRangeFacture.start, $lte: dateRangeFacture.end };
+      }
+
+      // Si client mentionné, chercher d'abord le client
+      if (clientNameFacture) {
+        const clientsFacture = await Client.find({
+          $or: [
+            { nom: new RegExp(clientNameFacture, 'i') },
+            { prenom: new RegExp(clientNameFacture, 'i') }
+          ]
+        }).select('_id');
+        const clientIdsFacture = clientsFacture.map(c => c._id);
+        if (clientIdsFacture.length > 0) {
+          queryFacture.clientId = { $in: clientIdsFacture };
+        }
+      }
+
+      console.log('🔍 Recherche factures avec:', queryFacture);
+
+      const factures = await Facture.find(queryFacture)
+        .sort({ dateFacture: -1 })
+        .limit(15)
+        .populate('clientId', 'nom prenom')
+        .select('numeroFacture dateFacture statut montantTotal montantTTC clientId');
+
+      if (factures.length > 0) {
+        const factureList = factures.map(f =>
+          `• **${f.numeroFacture}**\n` +
+          `  📅 ${new Date(f.dateFacture).toLocaleDateString('fr-FR')}\n` +
+          `  👤 ${f.clientId?.nom || 'N/A'} ${f.clientId?.prenom || ''}\n` +
+          `  💰 ${f.montantTTC.toFixed(2)}€ | Statut: ${f.statut}`
+        ).join('\n\n');
+
+        return {
+          success: true,
+          message: `🔍 **${factures.length} facture(s) trouvée(s)** :\n\n${factureList}`
+        };
+      } else {
+        return {
+          success: false,
+          message: `❌ Aucune facture trouvée avec ces critères.\n\nEssayez de préciser le numéro de facture ou le nom du client.`
+        };
+      }
+
+    case 'SEARCH_APPAREIL_PRET':
+      const typeAppareil = message.match(/(?:type|appareil)\s+(\w+)/i)?.[1];
+      const marqueAppareil = message.match(/(?:marque)\s+(\w+)/i)?.[1];
+
+      const queryAppareil = {};
+
+      if (typeAppareil) {
+        queryAppareil.type = new RegExp(typeAppareil, 'i');
+      }
+
+      if (marqueAppareil) {
+        queryAppareil.marque = new RegExp(marqueAppareil, 'i');
+      }
+
+      // Si aucun critère, chercher dans tout le message
+      if (!typeAppareil && !marqueAppareil) {
+        const searchTermAppareil = message.replace(/(?:trouve|cherche|montre|affiche|liste|appareil|pr[êe]t)/gi, '').trim();
+        if (searchTermAppareil) {
+          queryAppareil.$or = [
+            { type: new RegExp(searchTermAppareil, 'i') },
+            { marque: new RegExp(searchTermAppareil, 'i') },
+            { modele: new RegExp(searchTermAppareil, 'i') }
+          ];
+        }
+      }
+
+      console.log('🔍 Recherche appareils avec:', queryAppareil);
+
+      const appareils = await AppareilPret.find(queryAppareil)
+        .limit(15)
+        .select('reference type marque modele statut numeroSerie valeur');
+
+      if (appareils.length > 0) {
+        const appareilList = appareils.map(a => {
+          const statutIcon = a.statut === 'Disponible' ? '🟢' : a.statut === 'Prêté' ? '🟡' : '🔴';
+          return `• **${a.reference}** ${statutIcon}\n` +
+            `  📱 ${a.type} ${a.marque} ${a.modele}\n` +
+            `  📊 Statut: ${a.statut}${a.numeroSerie ? ` | S/N: ${a.numeroSerie}` : ''}${a.valeur ? ` | Valeur: ${a.valeur}€` : ''}`;
+        }).join('\n\n');
+
+        return {
+          success: true,
+          message: `🔍 **${appareils.length} appareil(s) trouvé(s)** :\n\n${appareilList}`
+        };
+      } else {
+        return {
+          success: false,
+          message: `❌ Aucun appareil de prêt trouvé avec ces critères.\n\nEssayez de chercher par type ou marque.`
+        };
+      }
 
     case 'CREATE_INTERVENTION':
       return {
         success: false,
-        message: `🚧 **Fonctionnalité en développement**\n\nLa création d'interventions via l'assistant arrive prochainement !\n\nPour le moment, vous pouvez :\n• Utiliser le bouton "Nouvelle intervention" dans l'interface\n• Me poser des questions sur vos interventions existantes\n• Analyser les interventions urgentes\n\nSouhaitez-vous que je vous aide avec quelque chose d'autre ?`
+        message: `🚧 **Fonctionnalité en développement**\n\nLa création d'interventions via l'assistant arrive prochainement !\n\nPour le moment, vous pouvez :\n• Utiliser le bouton "Nouvelle intervention" dans l'interface\n• Rechercher des interventions existantes\n• Analyser les interventions urgentes\n\nSouhaitez-vous que je vous aide à chercher une intervention ?`
       };
 
     case 'SEARCH_CLIENT':
-      // Extraire le nom du client de la question
-      const nameMatch = message.match(/(?:client|cherche|trouve|recherche)\s+(\w+)/i);
-      if (nameMatch) {
-        const searchName = nameMatch[1];
+      const nameMatchClient = message.match(/(?:client|cherche|trouve|recherche)\s+(\w+)/i);
+      if (nameMatchClient) {
+        const searchName = nameMatchClient[1];
         const clients = await Client.find({
           $or: [
             { nom: new RegExp(searchName, 'i') },
             { prenom: new RegExp(searchName, 'i') }
           ]
-        }).limit(5).select('nom prenom telephone ville email');
+        }).limit(10).select('nom prenom telephone ville email');
 
         if (clients.length > 0) {
           const clientList = clients.map(c =>
@@ -202,7 +519,7 @@ const executeAction = async (intent, message, context, req) => {
 
           return {
             success: true,
-            message: `📋 **Clients trouvés (${clients.length})** :\n\n${clientList}`
+            message: `📋 **${clients.length} client(s) trouvé(s)** :\n\n${clientList}`
           };
         } else {
           return {
@@ -220,15 +537,16 @@ const executeAction = async (intent, message, context, req) => {
     case 'UPDATE_STOCK':
       return {
         success: false,
-        message: `🚧 **Fonctionnalité en développement**\n\nLa modification du stock via l'assistant arrive prochainement !\n\nPour le moment, vous pouvez :\n• Consulter l'état du stock actuel\n• Voir les pièces en alerte\n• Modifier le stock via la page Stock\n\nSouhaitez-vous que je vous donne l'état du stock ?`
+        message: `🚧 **Fonctionnalité en développement**\n\nLa modification du stock via l'assistant arrive prochainement !\n\nPour le moment, vous pouvez :\n• Consulter l'état du stock actuel\n• Rechercher des pièces spécifiques\n• Voir les pièces en alerte\n\nSouhaitez-vous rechercher une pièce ?`
       };
 
     default:
-      return null; // Laisser Gemini répondre
+      return null;
   }
 };
 
-// Fonction pour générer une réponse avec OpenRouter
+// ========== GÉNÉRATION RÉPONSE IA ==========
+
 const generateAIResponse = async (userMessage, conversationHistory, context, req) => {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
@@ -250,42 +568,28 @@ const generateAIResponse = async (userMessage, conversationHistory, context, req
   }
 
   try {
-    // Construire le prompt système enrichi avec appareils de prêt
     const systemPrompt = `Tu es l'assistant IA intelligent d'EDS22, une entreprise de réparation d'électroménager basée à Guingamp (22200).
 
 ═══════════════════════════════════════════════════════════════
-📋 ARCHITECTURE DE L'APPLICATION EDS22
+🎯 SYSTÈME DE RECHERCHE AVANCÉ DISPONIBLE
 ═══════════════════════════════════════════════════════════════
 
-L'APPLICATION GÈRE 5 MODULES PRINCIPAUX :
+TU AS ACCÈS À TOUTES LES DONNÉES HISTORIQUES via des recherches :
 
-1. 👥 CLIENTS
-   - Base de données complète des clients avec coordonnées
-   - Historique d'interventions par client
-   - Appareils enregistrés par client
-   - Géolocalisation par ville
+🔍 RECHERCHES DISPONIBLES :
+• Interventions : Par client, date (mois/année), technicien, numéro
+• Pièces : Par référence, marque, désignation
+• Clients : Par nom, prénom
+• Factures : Par numéro, client, date
+• Appareils de prêt : Par type, marque
 
-2. 🔧 INTERVENTIONS
-   - Cycle de vie complet : Demande → Planifié → En cours → Diagnostic → Réparation → Terminé → Facturé
-   - Types : Atelier, Domicile
-   - Assignation aux techniciens (Jérémy, Stéphane, Anne Laure)
-   - Suivi détaillé avec pièces utilisées et main d'œuvre
+💡 EXEMPLES DE REQUÊTES :
+• "Trouve l'intervention du client Dupont en juin 2024"
+• "Liste les pièces WHIRLPOOL"
+• "Combien d'interventions a fait Jérémy en 2024 ?"
+• "Cherche la facture FAC-2024-0045"
 
-3. 📦 STOCK & PIÈCES DÉTACHÉES
-   - Inventaire de pièces détachées avec références
-   - Gestion des quantités (stock actuel vs minimum)
-   - Alertes automatiques si stock < minimum
-   - Prix d'achat et prix de vente
-
-4. 🏠 APPAREILS DE PRÊT
-   - Gestion des appareils prêtés aux clients pendant les réparations
-   - Statuts : Disponible, Prêté, En maintenance
-   - Suivi des retours et disponibilités
-
-5. 💰 FACTURATION
-   - Génération automatique de factures depuis les interventions
-   - Statuts : En attente, Payée, Annulée
-   - Suivi des paiements
+Si l'utilisateur cherche quelque chose de spécifique, SUGGÈRE-LUI d'utiliser une formulation de recherche.
 
 ═══════════════════════════════════════════════════════════════
 📊 DONNÉES EN TEMPS RÉEL (${new Date().toLocaleDateString('fr-FR')})
@@ -294,91 +598,33 @@ L'APPLICATION GÈRE 5 MODULES PRINCIPAUX :
 🔢 STATISTIQUES GLOBALES :
 • Interventions ce mois : ${context.stats.interventionsMois}
 • Interventions cette semaine : ${context.stats.interventionsSemaine}
-• Interventions en cours actuellement : ${context.stats.interventionsEnCours}
-• Chiffre d'affaires mensuel : ${context.stats.caMensuel}€
-• Total clients dans la base : ${context.stats.totalClients}
-• Pièces détachées référencées : ${context.stats.totalPieces}
-• Valeur totale du stock : ${context.stats.valeurStock}€
-• Factures en attente de paiement : ${context.stats.facturesEnAttente}
-• Factures payées ce mois : ${context.stats.facturesPayees}
+• Interventions en cours : ${context.stats.interventionsEnCours}
+• CA mensuel : ${context.stats.caMensuel}€
+• Total clients : ${context.stats.totalClients}
+• Pièces référencées : ${context.stats.totalPieces}
+• Valeur stock : ${context.stats.valeurStock}€
+• Factures en attente : ${context.stats.facturesEnAttente}
 
 🏠 APPAREILS DE PRÊT :
-• Total appareils : ${context.stats.totalAppareilsPret}
+• Total : ${context.stats.totalAppareilsPret}
 • Disponibles : ${context.stats.appareilsDisponibles}
-• Prêtés actuellement : ${context.stats.appareilsPretes}
+• Prêtés : ${context.stats.appareilsPretes}
 • En maintenance : ${context.stats.appareilsMaintenance}
-${context.derniersAppareilsPret.length > 0 ? `\nAppareils prêtés :\n${context.derniersAppareilsPret.map(a => `• ${a.type} ${a.marque} ${a.modele} (Ref: ${a.reference})`).join('\n')}` : ''}
 
-📍 RÉPARTITION PAR STATUT :
-${context.parStatut.map(s => `• ${s._id || 'Non défini'} : ${s.count} intervention(s)`).join('\n')}
-
-🛠️ RÉPARTITION PAR TYPE :
-${context.parType.map(t => `• ${t._id || 'Non défini'} : ${t.count} intervention(s)`).join('\n')}
-
-👨‍🔧 CHARGE PAR TECHNICIEN :
-${context.parTechnicien.length > 0 ? context.parTechnicien.map(t => `• ${t._id} : ${t.count} intervention(s)`).join('\n') : '• Aucune intervention assignée'}
-
-🌍 TOP 5 VILLES :
-${context.clientsParVille.map(v => `• ${v._id} : ${v.count} client(s)`).join('\n')}
-
-${context.stats.stockCritique > 0 ? `
-⚠️ ALERTES STOCK CRITIQUE (${context.stats.stockCritique} pièce(s)) :
-${context.piecesEnAlerte.map(p => `• ${p.reference} - "${p.designation}" : ${p.quantiteStock}/${p.quantiteMinimum} unités (Prix: ${p.prixAchat}€)`).join('\n')}
-` : '✅ STOCK : Toutes les pièces sont au-dessus du seuil minimum'}
-
-👥 DERNIERS CLIENTS ENREGISTRÉS :
-${context.derniersClients.map(c => `• ${c.nom} ${c.prenom} (${c.ville}) - ${c.telephone}${c.email ? ' - ' + c.email : ''}`).join('\n')}
-
-🔧 DERNIÈRES INTERVENTIONS :
-${context.dernieresInterventions.map(i => `• ${i.numero} - ${i.description} [${i.statut}] - Client: ${i.clientId?.nom || 'N/A'} ${i.clientId?.prenom || ''} (${i.clientId?.ville || 'N/A'}) - Tech: ${i.technicien || 'Non assigné'}${i.coutTotal ? ' - Coût: ' + i.coutTotal + '€' : ''}`).join('\n')}
-
-${context.interventionsUrgentes.length > 0 ? `
-🚨 INTERVENTIONS URGENTES (en attente > 7 jours) :
-${context.interventionsUrgentes.map(i => `• ${i.numero} - ${i.description} [${i.statut}] - Client: ${i.clientId?.nom} ${i.clientId?.prenom} - Tech: ${i.technicien || 'Non assigné'}`).join('\n')}
-` : '✅ Aucune intervention en retard'}
+${context.stats.stockCritique > 0 ? `⚠️ ALERTES STOCK : ${context.stats.stockCritique} pièce(s)` : '✅ STOCK OK'}
 
 ═══════════════════════════════════════════════════════════════
-🎯 TES CAPACITÉS & INSTRUCTIONS
+💡 DIRECTIVES
 ═══════════════════════════════════════════════════════════════
 
-TU PEUX :
-✅ Répondre de manière conversationnelle et naturelle
-✅ Comprendre les questions en langage familier
-✅ Analyser les statistiques et identifier les tendances
-✅ Répondre aux questions sur les interventions, clients, stock, appareils de prêt
-✅ Calculer des métriques (taux, moyennes, totaux)
-✅ Détecter les problèmes (stock faible, interventions urgentes, surcharge technicien)
-✅ Donner des recommandations basées sur les données réelles
-✅ Faire des comparaisons et des analyses croisées
-✅ Rechercher des clients par nom
-✅ Répondre aux salutations de manière chaleureuse
+1. CONVERSATIONNEL : Ton naturel et accessible
+2. PRÉCISION : Base-toi sur les données ci-dessus
+3. CONCISION : 2-5 phrases sauf si détails demandés
+4. PROACTIVITÉ : Suggère des recherches si pertinent
+5. CLARTÉ : Utilise des emojis (📊 📈 ⚠️ ✅)
 
-TU NE PEUX PAS (ENCORE) :
-❌ Créer, modifier ou supprimer des données directement
-→ Si demandé, explique poliment que cette fonctionnalité arrive prochainement
+Réponds maintenant :`;
 
-═══════════════════════════════════════════════════════════════
-💡 DIRECTIVES DE RÉPONSE
-═══════════════════════════════════════════════════════════════
-
-1. CONVERSATIONNEL : Réponds comme un collègue expert, pas comme un robot
-2. PRÉCISION : Base-toi UNIQUEMENT sur les données réelles ci-dessus
-3. CONCISION : Réponds en 2-5 phrases sauf si plus de détails sont demandés
-4. CLARTÉ : Utilise des emojis pour structurer (📊 📈 ⚠️ ✅ etc.)
-5. PROACTIVITÉ : Si tu détectes un problème dans les données, mentionne-le
-6. CONTEXTE : Relie les données entre elles pour donner du sens
-7. NATUREL : Accepte les questions mal formulées, familières, incomplètes
-8. TON : Professionnel mais accessible, chaleureux
-
-EXEMPLES DE COMPRÉHENSION :
-• "Y'a combien d'interventions ?" → Comprendre : stats interventions
-• "C'est qui le plus chargé ?" → Comprendre : analyse par technicien
-• "On a des trucs en rupture ?" → Comprendre : stock critique
-• "Le CA du mois ?" → Comprendre : chiffre d'affaires mensuel
-
-Réponds maintenant à la question de l'utilisateur :`;
-
-    // Préparer l'historique des messages pour l'API
     const messages = [
       { role: 'system', content: systemPrompt },
       ...conversationHistory.slice(-10).map(msg => ({
@@ -390,7 +636,6 @@ Réponds maintenant à la question de l'utilisateur :`;
 
     console.log('🤖 Envoi requête à OpenRouter...');
 
-    // Appel à l'API OpenRouter avec Gemini 2.0 Flash
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
@@ -418,19 +663,20 @@ Réponds maintenant à la question de l'utilisateur :`;
   } catch (error) {
     console.error('❌ Erreur OpenRouter:', error.response?.data || error.message);
 
-    // Fallback sur réponse simple en cas d'erreur
     return `Je suis désolé, je rencontre un problème technique. Voici ce que je peux vous dire :
 
-📊 Stats du mois : ${context.stats.interventionsMois} interventions, ${context.stats.caMensuel}€ de CA
-🏠 Appareils de prêt : ${context.stats.appareilsDisponibles} disponibles, ${context.stats.appareilsPretes} prêtés
-${context.stats.stockCritique > 0 ? `⚠️ ${context.stats.stockCritique} pièce(s) en stock critique` : '✅ Stock OK'}
-${context.interventionsUrgentes.length > 0 ? `🚨 ${context.interventionsUrgentes.length} intervention(s) urgente(s)` : ''}
+📊 Stats : ${context.stats.interventionsMois} interventions ce mois, ${context.stats.caMensuel}€ de CA
+🏠 Appareils : ${context.stats.appareilsDisponibles} disponibles, ${context.stats.appareilsPretes} prêtés
+${context.stats.stockCritique > 0 ? `⚠️ ${context.stats.stockCritique} pièces en alerte` : '✅ Stock OK'}
 
-Que puis-je faire pour vous ?`;
+💡 Vous pouvez faire des recherches spécifiques :
+• "Trouve l'intervention du client [nom]"
+• "Liste les pièces [marque]"`;
   }
 };
 
-// POST envoyer un message à l'assistant
+// ========== ROUTES API ==========
+
 router.post('/chat', async (req, res) => {
   try {
     const { message, sessionId } = req.body;
@@ -439,14 +685,12 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ message: 'Message vide' });
     }
 
-    // Récupérer le contexte de l'application
     const context = await getApplicationContext();
 
     if (!context) {
       return res.status(500).json({ message: 'Erreur lors de la récupération du contexte' });
     }
 
-    // Récupérer ou créer la conversation
     let conversation = await AIConversation.findOne({ sessionId });
 
     if (!conversation) {
@@ -457,14 +701,12 @@ router.post('/chat', async (req, res) => {
       });
     }
 
-    // Ajouter le message de l'utilisateur
     conversation.messages.push({
       role: 'user',
       content: message,
       timestamp: new Date()
     });
 
-    // Générer la réponse de l'assistant avec OpenRouter
     const assistantResponse = await generateAIResponse(
       message,
       conversation.messages,
@@ -472,7 +714,6 @@ router.post('/chat', async (req, res) => {
       req
     );
 
-    // Ajouter la réponse de l'assistant
     conversation.messages.push({
       role: 'assistant',
       content: assistantResponse,
@@ -493,7 +734,6 @@ router.post('/chat', async (req, res) => {
   }
 });
 
-// GET récupérer une conversation
 router.get('/chat/:sessionId', async (req, res) => {
   try {
     const conversation = await AIConversation.findOne({ sessionId: req.params.sessionId });
