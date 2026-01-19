@@ -214,9 +214,18 @@ const detectIntent = (message) => {
     return { action: 'SEARCH_INTERVENTION', confidence: 0.9 };
   }
 
-  // Recherche de pièce spécifique
-  if (msg.match(/(?:trouve|cherche|montre|affiche).*pi[èe]ce/i) ||
-      msg.match(/pi[èe]ce.*(?:référence|ref|marque)/i)) {
+  // Recherche de stock critique / alertes
+  if (msg.match(/(?:pi[èe]ces?|stock).*(?:critique|alerte|minimum|rupture)/i) ||
+      msg.match(/(?:critique|alerte|rupture).*(?:pi[èe]ces?|stock)/i) ||
+      msg.match(/(?:liste|voir|affiche|montre).*(?:alertes?|stock critique)/i) ||
+      msg.match(/quelles?.*pi[èe]ces?.*(?:critique|alerte|minimum)/i)) {
+    return { action: 'SEARCH_STOCK_CRITIQUE', confidence: 0.95 };
+  }
+
+  // Recherche de pièce spécifique (amélioration pour marques)
+  if (msg.match(/(?:trouve|cherche|montre|affiche|liste).*pi[èe]ce/i) ||
+      msg.match(/pi[èe]ce.*(?:référence|ref|marque)/i) ||
+      msg.match(/pi[èe]ces?\s+(?:samsung|whirlpool|bosch|siemens|lg|electrolux|miele)/i)) {
     return { action: 'SEARCH_PIECE', confidence: 0.9 };
   }
 
@@ -385,6 +394,46 @@ const executeAction = async (intent, message, context, req) => {
         return {
           success: false,
           message: `❌ Aucune pièce trouvée avec ces critères.\n\nEssayez de chercher par référence, marque ou désignation.`
+        };
+      }
+
+    case 'SEARCH_STOCK_CRITIQUE':
+      const piecesAlerte = await Piece.find({
+        actif: true,
+        $expr: { $lt: ['$quantiteStock', '$quantiteMinimum'] }
+      })
+        .sort({ quantiteStock: 1 })
+        .limit(20)
+        .select('reference designation marque quantiteStock quantiteMinimum prixAchat prixVente emplacement');
+
+      if (piecesAlerte.length > 0) {
+        const totalCritique = await Piece.countDocuments({
+          actif: true,
+          $expr: { $lt: ['$quantiteStock', '$quantiteMinimum'] }
+        });
+
+        const alerteList = piecesAlerte.map(p => {
+          const stockStatus = p.quantiteStock === 0 ? '🔴 RUPTURE' : '🟡 CRITIQUE';
+          const urgence = p.quantiteStock === 0 ? '⚠️ URGENT' : '';
+          return `• **${p.reference}** ${stockStatus} ${urgence}\n` +
+            `  📦 ${p.designation}\n` +
+            `  🏭 ${p.marque || 'N/A'}\n` +
+            `  📊 Stock: ${p.quantiteStock}/${p.quantiteMinimum} (manque: ${p.quantiteMinimum - p.quantiteStock})\n` +
+            `  📍 Emplacement: ${p.emplacement || 'N/A'} | Valeur: ${(p.quantiteMinimum * p.prixAchat).toFixed(2)}€`;
+        }).join('\n\n');
+
+        const resume = totalCritique > piecesAlerte.length
+          ? `\n\n⚠️ **Total: ${totalCritique} pièces en stock critique** (affichage des 20 plus urgentes)`
+          : `\n\n📊 **Total: ${totalCritique} pièces en stock critique**`;
+
+        return {
+          success: true,
+          message: `🚨 **PIÈCES EN STOCK CRITIQUE** 🚨\n\n${alerteList}${resume}\n\n💡 Pensez à réapprovisionner ces pièces rapidement.`
+        };
+      } else {
+        return {
+          success: true,
+          message: `✅ **Excellent !** Aucune pièce en stock critique actuellement.\n\nToutes les pièces sont au-dessus du seuil minimum.`
         };
       }
 
@@ -577,19 +626,24 @@ const generateAIResponse = async (userMessage, conversationHistory, context, req
 TU AS ACCÈS À TOUTES LES DONNÉES HISTORIQUES via des recherches :
 
 🔍 RECHERCHES DISPONIBLES :
-• Interventions : Par client, date (mois/année), technicien, numéro
-• Pièces : Par référence, marque, désignation
-• Clients : Par nom, prénom
-• Factures : Par numéro, client, date
-• Appareils de prêt : Par type, marque
+• **Interventions** : Par client, date (mois/année), technicien, numéro
+• **Pièces** : Par référence, marque, désignation
+• **Stock critique** : Liste des pièces en alerte ou rupture
+• **Clients** : Par nom, prénom
+• **Factures** : Par numéro, client, date
+• **Appareils de prêt** : Par type, marque
 
-💡 EXEMPLES DE REQUÊTES :
+💡 EXEMPLES DE REQUÊTES QUI FONCTIONNENT :
 • "Trouve l'intervention du client Dupont en juin 2024"
-• "Liste les pièces WHIRLPOOL"
+• "Liste les pièces SAMSUNG" ← Marche avec toutes les marques !
+• "Quelles sont les pièces en stock critique ?" ← Affiche les 20 plus urgentes
 • "Combien d'interventions a fait Jérémy en 2024 ?"
 • "Cherche la facture FAC-2024-0045"
 
-Si l'utilisateur cherche quelque chose de spécifique, SUGGÈRE-LUI d'utiliser une formulation de recherche.
+⚠️ IMPORTANT - GUIDE L'UTILISATEUR :
+• Si l'utilisateur demande une recherche vague, ORIENTE-LE vers une formulation spécifique
+• Exemple : "Liste toutes les pièces" → Suggère : "Liste les pièces [MARQUE]" ou "Quelles pièces en stock critique ?"
+• NE DIS JAMAIS "Je ne peux pas" SANS proposer une alternative concrète
 
 ═══════════════════════════════════════════════════════════════
 📊 DONNÉES EN TEMPS RÉEL (${new Date().toLocaleDateString('fr-FR')})
