@@ -14,6 +14,8 @@ import Facturation from './pages/Facturation';
 import AppareilsPret from './pages/AppareilsPret';
 import AppareilPretDetail from './pages/AppareilPretDetail';
 import FichesInternes from './pages/FichesInternes';
+import Vehicules from './pages/Vehicules';
+import VehiculeDetail from './pages/VehiculeDetail';
 import './styles/index.css';
 
 // Protected Route Component
@@ -148,6 +150,26 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Layout>
               <FichesInternes />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicules"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Vehicules />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicules/:vehiculeId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <VehiculeDetail />
             </Layout>
           </ProtectedRoute>
         }

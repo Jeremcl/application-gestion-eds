@@ -375,4 +375,48 @@ export const fichesInternes = {
   }
 };
 
+// Vehicules
+export const vehicules = {
+  getAll: async (params) => {
+    const response = await api.get('/api/vehicules', { params });
+    return response;
+  },
+  getStats: async () => {
+    const response = await api.get('/api/vehicules/stats');
+    return response;
+  },
+  getAlertesDocuments: async () => {
+    const response = await api.get('/api/vehicules/alertes-documents');
+    return response;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/api/vehicules/${id}`);
+    return response;
+  },
+  create: async (data) => {
+    const response = await api.post('/api/vehicules', data);
+    return response;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/api/vehicules/${id}`, data);
+    return response;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/api/vehicules/${id}`);
+    return response;
+  },
+  addKilometrage: async (id, data) => {
+    const response = await api.post(`/api/vehicules/${id}/kilometrage`, data);
+    return response;
+  },
+  addCarburant: async (id, data) => {
+    const response = await api.post(`/api/vehicules/${id}/carburant`, data);
+    return response;
+  },
+  addDocument: async (id, data) => {
+    const response = await api.post(`/api/vehicules/${id}/documents`, data);
+    return response;
+  }
+};
+
 export default api;
