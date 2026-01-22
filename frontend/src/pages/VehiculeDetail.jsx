@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Truck, Edit, Trash2, ArrowLeft, Plus, Fuel, Gauge, FileText, X } from 'lucide-react';
-import { vehicules as vehiculesAPI } from '../services/api';
+import { Truck, Edit, Trash2, ArrowLeft, Plus, Fuel, Gauge, FileText, X, Camera, Upload } from 'lucide-react';
+import { vehicules as vehiculesAPI, uploads as uploadsAPI } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import VehiculeModal from '../components/VehiculeModal';
 
@@ -261,6 +261,14 @@ const VehiculeDetail = () => {
   );
 };
 
+// Helper pour construire l'URL complete des photos
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const getPhotoUrl = (photoUrl) => {
+  if (!photoUrl) return null;
+  if (photoUrl.startsWith('http')) return photoUrl;
+  return `${API_URL}${photoUrl}`;
+};
+
 // Sub-components for tabs
 
 const KilometrageTab = ({ historique, onAdd }) => {
@@ -300,7 +308,7 @@ const KilometrageTab = ({ historique, onAdd }) => {
                     {item.photoUrl ? (
                       <button
                         className="btn btn-sm btn-secondary"
-                        onClick={() => setPreviewPhoto(item.photoUrl)}
+                        onClick={() => setPreviewPhoto(getPhotoUrl(item.photoUrl))}
                         style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                       >
                         Voir photo
@@ -466,6 +474,9 @@ const DocumentsTab = ({ documents, onAdd }) => {
 
 const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     valeur: '',
@@ -473,20 +484,55 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
     notes: ''
   });
 
+  const handlePhotoCapture = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Afficher l'apercu immediatement
+    const reader = new FileReader();
+    reader.onload = (e) => setPhotoPreview(e.target.result);
+    reader.readAsDataURL(file);
+
+    // Upload le fichier
+    setUploading(true);
+    try {
+      const { data } = await uploadsAPI.uploadPhoto('vehicules', file);
+      setFormData(prev => ({ ...prev, photoUrl: data.url }));
+    } catch (error) {
+      console.error('Erreur upload photo:', error);
+      alert('Erreur lors de l\'upload de la photo');
+      setPhotoPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoPreview(null);
+    setFormData(prev => ({ ...prev, photoUrl: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       await vehiculesAPI.addKilometrage(vehiculeId, formData);
       onSuccess?.();
-      onClose();
-      setFormData({ date: new Date().toISOString().split('T')[0], valeur: '', photoUrl: '', notes: '' });
+      handleClose();
     } catch (error) {
       console.error('Erreur ajout kilometrage:', error);
       alert(error.response?.data?.message || 'Erreur');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    setFormData({ date: new Date().toISOString().split('T')[0], valeur: '', photoUrl: '', notes: '' });
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    onClose();
   };
 
   if (!show) return null;
@@ -497,10 +543,10 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
       background: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 'var(--space-4)'
     }}>
-      <div className="card animate-slide-in" style={{ width: '100%', maxWidth: '500px' }}>
+      <div className="card animate-slide-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
           <h2>Ajouter un releve kilometrique</h2>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 'var(--space-2)', color: 'var(--neutral-600)' }}>
+          <button onClick={handleClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 'var(--space-2)', color: 'var(--neutral-600)' }}>
             <X size={24} />
           </button>
         </div>
@@ -511,14 +557,58 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
           </div>
           <div className="form-group">
             <label className="form-label">Kilometrage *</label>
-            <input type="number" className="form-input" value={formData.valeur} onChange={(e) => setFormData({ ...formData, valeur: parseInt(e.target.value) || '' })} required min="0" placeholder="165241" />
+            <input type="number" className="form-input" value={formData.valeur} onChange={(e) => setFormData({ ...formData, valeur: parseInt(e.target.value) || '' })} required min="0" placeholder="165241" inputMode="numeric" />
           </div>
           <div className="form-group">
-            <label className="form-label">Photo du compteur (URL)</label>
-            <input type="url" className="form-input" value={formData.photoUrl} onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })} placeholder="https://..." />
-            {formData.photoUrl && (
-              <div style={{ marginTop: 'var(--space-2)' }}>
-                <img src={formData.photoUrl} alt="Apercu" style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: 'var(--radius-md)', border: '1px solid var(--neutral-200)' }} onError={(e) => e.target.style.display = 'none'} />
+            <label className="form-label">Photo du compteur</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoCapture}
+              style={{ display: 'none' }}
+            />
+            {!photoPreview && !formData.photoUrl ? (
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
+                >
+                  <Camera size={18} />
+                  Prendre une photo
+                </button>
+              </div>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                {uploading && (
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    borderRadius: 'var(--radius-md)', zIndex: 1
+                  }}>
+                    <span>Upload en cours...</span>
+                  </div>
+                )}
+                <img
+                  src={photoPreview || formData.photoUrl}
+                  alt="Apercu compteur"
+                  style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: 'var(--radius-md)', border: '1px solid var(--neutral-200)' }}
+                />
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  style={{
+                    position: 'absolute', top: '8px', right: '8px',
+                    background: 'var(--red-500)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)',
+                    width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  <X size={16} />
+                </button>
               </div>
             )}
           </div>
@@ -527,8 +617,8 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
             <textarea className="form-textarea" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} placeholder="Notes optionnelles..." />
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>Annuler</button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Ajout...' : 'Ajouter'}</button>
+            <button type="button" className="btn btn-secondary" onClick={handleClose} disabled={loading || uploading}>Annuler</button>
+            <button type="submit" className="btn btn-primary" disabled={loading || uploading}>{loading ? 'Ajout...' : 'Ajouter'}</button>
           </div>
         </form>
       </div>

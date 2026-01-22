@@ -419,4 +419,22 @@ export const vehicules = {
   }
 };
 
+// Uploads
+export const uploads = {
+  uploadPhoto: async (type, file) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    const response = await api.post(`/api/uploads/${type}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response;
+  },
+  deletePhoto: async (type, filename) => {
+    const response = await api.delete(`/api/uploads/${type}/${filename}`);
+    return response;
+  }
+};
+
 export default api;

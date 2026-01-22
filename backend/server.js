@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 
@@ -32,6 +33,10 @@ app.use('/api/appareils-pret', require('./routes/appareilsPret'));
 app.use('/api/prets', require('./routes/prets'));
 app.use('/api/fiches-internes', require('./routes/fichesInternes'));
 app.use('/api/vehicules', require('./routes/vehicules'));
+app.use('/api/uploads', require('./routes/uploads'));
+
+// Servir les fichiers uploadés (photos)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI)
