@@ -265,6 +265,7 @@ const VehiculeDetail = () => {
 
 const KilometrageTab = ({ historique, onAdd }) => {
   const sorted = [...historique].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const [previewPhoto, setPreviewPhoto] = useState(null);
 
   return (
     <div>
@@ -286,6 +287,7 @@ const KilometrageTab = ({ historique, onAdd }) => {
               <tr>
                 <th>Date</th>
                 <th>Kilometrage</th>
+                <th>Photo</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -294,11 +296,53 @@ const KilometrageTab = ({ historique, onAdd }) => {
                 <tr key={item._id || index}>
                   <td>{new Date(item.date).toLocaleDateString('fr-FR')}</td>
                   <td style={{ fontWeight: 600 }}>{item.valeur?.toLocaleString('fr-FR')} km</td>
+                  <td>
+                    {item.photoUrl ? (
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => setPreviewPhoto(item.photoUrl)}
+                        style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                      >
+                        Voir photo
+                      </button>
+                    ) : '-'}
+                  </td>
                   <td>{item.notes || '-'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal preview photo */}
+      {previewPhoto && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 'var(--space-4)'
+          }}
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }}>
+            <img
+              src={previewPhoto}
+              alt="Photo ticket"
+              style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xl)' }}
+            />
+            <button
+              onClick={() => setPreviewPhoto(null)}
+              style={{
+                position: 'absolute', top: '-40px', right: 0,
+                background: 'white', border: 'none', borderRadius: 'var(--radius-full)',
+                width: '32px', height: '32px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -425,6 +469,7 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     valeur: '',
+    photoUrl: '',
     notes: ''
   });
 
@@ -435,7 +480,7 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
       await vehiculesAPI.addKilometrage(vehiculeId, formData);
       onSuccess?.();
       onClose();
-      setFormData({ date: new Date().toISOString().split('T')[0], valeur: '', notes: '' });
+      setFormData({ date: new Date().toISOString().split('T')[0], valeur: '', photoUrl: '', notes: '' });
     } catch (error) {
       console.error('Erreur ajout kilometrage:', error);
       alert(error.response?.data?.message || 'Erreur');
@@ -467,6 +512,15 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
           <div className="form-group">
             <label className="form-label">Kilometrage *</label>
             <input type="number" className="form-input" value={formData.valeur} onChange={(e) => setFormData({ ...formData, valeur: parseInt(e.target.value) || '' })} required min="0" placeholder="165241" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Photo du compteur (URL)</label>
+            <input type="url" className="form-input" value={formData.photoUrl} onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })} placeholder="https://..." />
+            {formData.photoUrl && (
+              <div style={{ marginTop: 'var(--space-2)' }}>
+                <img src={formData.photoUrl} alt="Apercu" style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: 'var(--radius-md)', border: '1px solid var(--neutral-200)' }} onError={(e) => e.target.style.display = 'none'} />
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label className="form-label">Notes</label>

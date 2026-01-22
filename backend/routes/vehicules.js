@@ -173,7 +173,7 @@ router.delete('/:id', async (req, res) => {
 // POST ajouter un relevé kilométrique
 router.post('/:id/kilometrage', async (req, res) => {
   try {
-    const { date, valeur, notes } = req.body;
+    const { date, valeur, photoUrl, notes } = req.body;
 
     if (!valeur || valeur < 0) {
       return res.status(400).json({ message: 'Valeur de kilométrage invalide' });
@@ -187,6 +187,7 @@ router.post('/:id/kilometrage', async (req, res) => {
     vehicule.historiqueKilometrage.push({
       date: date || new Date(),
       valeur,
+      photoUrl,
       notes
     });
 
