@@ -359,6 +359,7 @@ const KilometrageTab = ({ historique, onAdd }) => {
 
 const CarburantTab = ({ historique, onAdd }) => {
   const sorted = [...historique].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const [previewPhoto, setPreviewPhoto] = useState(null);
 
   const totalMois = sorted
     .filter(c => new Date(c.date) >= new Date(new Date().setDate(1)))
@@ -391,6 +392,7 @@ const CarburantTab = ({ historique, onAdd }) => {
                 <th>Litres</th>
                 <th>Montant</th>
                 <th>Prix/L</th>
+                <th>Ticket</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -401,11 +403,53 @@ const CarburantTab = ({ historique, onAdd }) => {
                   <td>{item.litres?.toFixed(2) || '-'} L</td>
                   <td style={{ fontWeight: 600 }}>{item.montant?.toFixed(2) || '-'} EUR</td>
                   <td>{item.prixLitre?.toFixed(3) || '-'} EUR</td>
+                  <td>
+                    {item.ticketUrl ? (
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => setPreviewPhoto(getPhotoUrl(item.ticketUrl))}
+                        style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                      >
+                        Voir ticket
+                      </button>
+                    ) : '-'}
+                  </td>
                   <td>{item.notes || '-'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal preview photo ticket */}
+      {previewPhoto && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 'var(--space-4)'
+          }}
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }}>
+            <img
+              src={previewPhoto}
+              alt="Photo ticket"
+              style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xl)' }}
+            />
+            <button
+              onClick={() => setPreviewPhoto(null)}
+              style={{
+                position: 'absolute', top: '-40px', right: 0,
+                background: 'white', border: 'none', borderRadius: 'var(--radius-full)',
+                width: '32px', height: '32px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -628,12 +672,43 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
 
 const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     litres: '',
     montant: '',
+    ticketUrl: '',
     notes: ''
   });
+
+  const handlePhotoCapture = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => setPhotoPreview(e.target.result);
+    reader.readAsDataURL(file);
+
+    setUploading(true);
+    try {
+      const { data } = await uploadsAPI.uploadPhoto('tickets', file);
+      setFormData(prev => ({ ...prev, ticketUrl: data.url }));
+    } catch (error) {
+      console.error('Erreur upload photo:', error);
+      alert('Erreur lors de l\'upload de la photo');
+      setPhotoPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoPreview(null);
+    setFormData(prev => ({ ...prev, ticketUrl: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -641,14 +716,20 @@ const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
     try {
       await vehiculesAPI.addCarburant(vehiculeId, formData);
       onSuccess?.();
-      onClose();
-      setFormData({ date: new Date().toISOString().split('T')[0], litres: '', montant: '', notes: '' });
+      handleClose();
     } catch (error) {
       console.error('Erreur ajout carburant:', error);
       alert(error.response?.data?.message || 'Erreur');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    setFormData({ date: new Date().toISOString().split('T')[0], litres: '', montant: '', ticketUrl: '', notes: '' });
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    onClose();
   };
 
   if (!show) return null;
@@ -659,10 +740,10 @@ const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
       background: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 'var(--space-4)'
     }}>
-      <div className="card animate-slide-in" style={{ width: '100%', maxWidth: '500px' }}>
+      <div className="card animate-slide-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
           <h2>Ajouter un plein</h2>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 'var(--space-2)', color: 'var(--neutral-600)' }}>
+          <button onClick={handleClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 'var(--space-2)', color: 'var(--neutral-600)' }}>
             <X size={24} />
           </button>
         </div>
@@ -674,20 +755,73 @@ const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
           <div className="grid grid-2 mb-4">
             <div className="form-group">
               <label className="form-label">Litres</label>
-              <input type="number" className="form-input" value={formData.litres} onChange={(e) => setFormData({ ...formData, litres: parseFloat(e.target.value) || '' })} min="0" step="0.01" placeholder="45.5" />
+              <input type="number" className="form-input" value={formData.litres} onChange={(e) => setFormData({ ...formData, litres: parseFloat(e.target.value) || '' })} min="0" step="0.01" placeholder="45.5" inputMode="decimal" />
             </div>
             <div className="form-group">
               <label className="form-label">Montant (EUR)</label>
-              <input type="number" className="form-input" value={formData.montant} onChange={(e) => setFormData({ ...formData, montant: parseFloat(e.target.value) || '' })} min="0" step="0.01" placeholder="85.50" />
+              <input type="number" className="form-input" value={formData.montant} onChange={(e) => setFormData({ ...formData, montant: parseFloat(e.target.value) || '' })} min="0" step="0.01" placeholder="85.50" inputMode="decimal" />
             </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Photo du ticket</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoCapture}
+              style={{ display: 'none' }}
+            />
+            {!photoPreview && !formData.ticketUrl ? (
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
+                >
+                  <Camera size={18} />
+                  Prendre en photo le ticket
+                </button>
+              </div>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                {uploading && (
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    borderRadius: 'var(--radius-md)', zIndex: 1
+                  }}>
+                    <span>Upload en cours...</span>
+                  </div>
+                )}
+                <img
+                  src={photoPreview || formData.ticketUrl}
+                  alt="Apercu ticket"
+                  style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: 'var(--radius-md)', border: '1px solid var(--neutral-200)' }}
+                />
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  style={{
+                    position: 'absolute', top: '8px', right: '8px',
+                    background: 'var(--red-500)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)',
+                    width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label className="form-label">Notes</label>
             <textarea className="form-textarea" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} placeholder="Station, type carburant..." />
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>Annuler</button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Ajout...' : 'Ajouter'}</button>
+            <button type="button" className="btn btn-secondary" onClick={handleClose} disabled={loading || uploading}>Annuler</button>
+            <button type="submit" className="btn btn-primary" disabled={loading || uploading}>{loading ? 'Ajout...' : 'Ajouter'}</button>
           </div>
         </form>
       </div>
