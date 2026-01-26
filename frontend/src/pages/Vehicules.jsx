@@ -170,7 +170,7 @@ const Vehicules = () => {
         </div>
 
         {/* Status filters */}
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <div className="filters-scroll">
           <button
             className={`btn ${filterStatut === '' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilterStatut('')}

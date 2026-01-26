@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, AlertTriangle, Package, Search, Edit, Eye } from 'lucide-react';
 import { pieces as piecesAPI } from '../services/api';
 import PieceModal from '../components/PieceModal';
+import ResponsiveTable from '../components/ResponsiveTable';
 
 const Stock = () => {
   const navigate = useNavigate();
@@ -80,14 +81,14 @@ const Stock = () => {
 
       {/* Alertes stock */}
       {alertesCount > 0 && (
-        <div className="card mb-6" style={{
+        <div className="card mb-6 alert-card" style={{
           padding: 'var(--space-4)',
           background: 'rgba(220, 38, 38, 0.1)',
           border: '2px solid var(--red-500)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <AlertTriangle size={24} style={{ color: 'var(--red-600)' }} />
-            <div>
+          <div className="alert-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <AlertTriangle size={24} style={{ color: 'var(--red-600)', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: '200px' }}>
               <div style={{ fontWeight: 600, color: 'var(--red-700)', marginBottom: '4px' }}>
                 {alertesCount} pièce(s) en stock critique
               </div>
@@ -98,9 +99,9 @@ const Stock = () => {
             <button
               className={`btn ${showAlertes ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setShowAlertes(!showAlertes)}
-              style={{ marginLeft: 'auto' }}
+              style={{ flexShrink: 0 }}
             >
-              {showAlertes ? 'Voir tout le stock' : 'Voir les alertes'}
+              {showAlertes ? 'Voir tout' : 'Voir alertes'}
             </button>
           </div>
         </div>
@@ -133,138 +134,195 @@ const Stock = () => {
       </div>
 
       {/* Table des pièces */}
-      {loading ? (
-        <div className="card" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-          Chargement...
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Référence</th>
-                <th>Désignation</th>
-                <th>Marque</th>
-                <th>Emplacement</th>
-                <th>Stock</th>
-                <th>Prix Achat</th>
-                <th>Prix Vente</th>
-                <th>Fournisseur</th>
-                <th style={{ width: '100px', textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pieces.map((piece) => {
-                const stockStatus = getStockStatus(piece);
-                return (
-                  <tr
-                    key={piece._id}
-                    onClick={(e) => handleView(piece._id, e)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
-                      {piece.reference}
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 500 }}>{piece.designation}</div>
-                      {piece.modelesCompatibles?.length > 0 && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)' }}>
-                          Compatible: {piece.modelesCompatibles.slice(0, 2).join(', ')}
-                          {piece.modelesCompatibles.length > 2 && '...'}
-                        </div>
-                      )}
-                    </td>
-                    <td>{piece.marque || '-'}</td>
-                    <td>
-                      <span style={{
-                        padding: '4px 8px',
-                        background: 'var(--neutral-100)',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        fontFamily: 'monospace'
-                      }}>
-                        {piece.emplacement || 'N/A'}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <span className={`badge badge-${stockStatus}`}>
-                          {piece.quantiteStock}
-                        </span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--neutral-500)' }}>
-                          / min. {piece.quantiteMinimum}
-                        </span>
-                        {stockStatus === 'warning' && (
-                          <AlertTriangle size={16} style={{ color: 'var(--yellow-600)' }} />
-                        )}
-                        {stockStatus === 'danger' && (
-                          <AlertTriangle size={16} style={{ color: 'var(--red-600)' }} />
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ fontSize: '0.875rem' }}>
-                      {piece.prixAchat.toFixed(2)}€
-                    </td>
-                    <td style={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                      {piece.prixVente.toFixed(2)}€
-                    </td>
-                    <td style={{ fontSize: '0.875rem' }}>
-                      {piece.fournisseur || '-'}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'center' }}>
-                        <button
-                          onClick={(e) => handleView(piece._id, e)}
-                          className="btn-icon btn-icon-sm"
-                          title="Voir les détails"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => handleEdit(piece, e)}
-                          className="btn-icon btn-icon-sm"
-                          title="Modifier"
-                        >
-                          <Edit size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 'var(--space-2)',
-              padding: 'var(--space-6) 0',
-              borderTop: '1px solid var(--neutral-200)'
-            }}>
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="btn btn-secondary btn-sm"
-              >
-                Précédent
-              </button>
-              <span style={{ fontSize: '0.875rem', color: 'var(--neutral-600)' }}>
-                Page {currentPage} sur {totalPages}
+      <ResponsiveTable
+        loading={loading}
+        data={pieces}
+        onRowClick={(piece) => handleView(piece._id)}
+        columns={[
+          {
+            header: 'Référence',
+            render: (piece) => (
+              <span style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
+                {piece.reference}
               </span>
+            )
+          },
+          {
+            header: 'Désignation',
+            render: (piece) => (
+              <>
+                <div style={{ fontWeight: 500 }}>{piece.designation}</div>
+                {piece.modelesCompatibles?.length > 0 && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--neutral-500)' }}>
+                    Compatible: {piece.modelesCompatibles.slice(0, 2).join(', ')}
+                    {piece.modelesCompatibles.length > 2 && '...'}
+                  </div>
+                )}
+              </>
+            )
+          },
+          {
+            header: 'Marque',
+            render: (piece) => piece.marque || '-'
+          },
+          {
+            header: 'Emplacement',
+            render: (piece) => (
+              <span style={{
+                padding: '4px 8px',
+                background: 'var(--neutral-100)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                fontFamily: 'monospace'
+              }}>
+                {piece.emplacement || 'N/A'}
+              </span>
+            )
+          },
+          {
+            header: 'Stock',
+            render: (piece) => {
+              const stockStatus = getStockStatus(piece);
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <span className={`badge badge-${stockStatus}`}>
+                    {piece.quantiteStock}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--neutral-500)' }}>
+                    / min. {piece.quantiteMinimum}
+                  </span>
+                  {stockStatus === 'warning' && (
+                    <AlertTriangle size={16} style={{ color: 'var(--yellow-600)' }} />
+                  )}
+                  {stockStatus === 'danger' && (
+                    <AlertTriangle size={16} style={{ color: 'var(--red-600)' }} />
+                  )}
+                </div>
+              );
+            }
+          },
+          {
+            header: 'Prix Achat',
+            cellStyle: { fontSize: '0.875rem' },
+            render: (piece) => `${piece.prixAchat.toFixed(2)}€`
+          },
+          {
+            header: 'Prix Vente',
+            cellStyle: { fontSize: '0.875rem', fontWeight: 600 },
+            render: (piece) => `${piece.prixVente.toFixed(2)}€`
+          },
+          {
+            header: 'Fournisseur',
+            cellStyle: { fontSize: '0.875rem' },
+            render: (piece) => piece.fournisseur || '-'
+          },
+          {
+            header: 'Actions',
+            headerStyle: { width: '100px', textAlign: 'center' },
+            render: (piece) => (
+              <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'center' }}>
+                <button
+                  onClick={(e) => handleView(piece._id, e)}
+                  className="btn-icon"
+                  title="Voir les détails"
+                >
+                  <Eye size={16} />
+                </button>
+                <button
+                  onClick={(e) => handleEdit(piece, e)}
+                  className="btn-icon"
+                  title="Modifier"
+                >
+                  <Edit size={16} />
+                </button>
+              </div>
+            )
+          }
+        ]}
+        mobileCardConfig={{
+          title: (piece) => piece.reference,
+          subtitle: (piece) => piece.designation,
+          badge: (piece) => {
+            const stockStatus = getStockStatus(piece);
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                <span className={`badge badge-${stockStatus}`}>
+                  {piece.quantiteStock}
+                </span>
+                {stockStatus !== 'success' && (
+                  <AlertTriangle size={14} style={{ color: stockStatus === 'danger' ? 'var(--red-600)' : 'var(--yellow-600)' }} />
+                )}
+              </div>
+            );
+          },
+          fields: [
+            {
+              label: 'Marque',
+              render: (piece) => piece.marque || '-'
+            },
+            {
+              label: 'Emplacement',
+              render: (piece) => piece.emplacement || 'N/A'
+            },
+            {
+              label: 'Prix Vente',
+              render: (piece) => `${piece.prixVente.toFixed(2)}€`
+            },
+            {
+              label: 'Stock min.',
+              render: (piece) => piece.quantiteMinimum
+            }
+          ],
+          actions: (piece) => (
+            <>
               <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="btn btn-secondary btn-sm"
+                onClick={(e) => handleView(piece._id, e)}
+                className="btn-icon"
+                title="Voir les détails"
               >
-                Suivant
+                <Eye size={16} />
               </button>
-            </div>
-          )}
+              <button
+                onClick={(e) => handleEdit(piece, e)}
+                className="btn-icon"
+                title="Modifier"
+              >
+                <Edit size={16} />
+              </button>
+            </>
+          )
+        }}
+        emptyMessage="Aucune pièce trouvée"
+      />
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 'var(--space-2)',
+          padding: 'var(--space-6) 0',
+          marginTop: 'var(--space-4)'
+        }}>
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="btn btn-secondary"
+          >
+            Précédent
+          </button>
+          <span style={{ fontSize: '0.875rem', color: 'var(--neutral-600)' }}>
+            Page {currentPage} sur {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="btn btn-secondary"
+          >
+            Suivant
+          </button>
         </div>
       )}
 

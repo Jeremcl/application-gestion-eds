@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Monitor, X } from 'lucide-react';
 import { clients as clientsAPI } from '../services/api';
+import ResponsiveTable from '../components/ResponsiveTable';
 
 const Clients = () => {
   const navigate = useNavigate();
@@ -178,141 +179,153 @@ const Clients = () => {
       </div>
 
       {/* Table des clients */}
-      {loading ? (
-        <div className="card" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-          Chargement...
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Nom & Prénom</th>
-                <th>Contact</th>
-                <th>Adresse</th>
-                <th>Appareils</th>
-                <th style={{ width: '120px', textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clients.map((client) => (
-                <tr
-                  key={client._id}
-                  onClick={() => navigate(`/clients/${client._id}`)}
-                  style={{ cursor: 'pointer' }}
+      <ResponsiveTable
+        loading={loading}
+        data={clients}
+        onRowClick={(client) => navigate(`/clients/${client._id}`)}
+        columns={[
+          {
+            header: 'Nom & Prénom',
+            render: (client) => (
+              <div style={{ fontWeight: 600 }}>
+                {client.nom} {client.prenom}
+              </div>
+            )
+          },
+          {
+            header: 'Contact',
+            render: (client) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}>
+                  <Phone size={14} style={{ color: 'var(--neutral-500)' }} />
+                  {client.telephone}
+                </div>
+                {client.email && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}>
+                    <Mail size={14} style={{ color: 'var(--neutral-500)' }} />
+                    {client.email}
+                  </div>
+                )}
+              </div>
+            )
+          },
+          {
+            header: 'Adresse',
+            render: (client) => client.adresse ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}>
+                <MapPin size={14} style={{ color: 'var(--neutral-500)' }} />
+                {client.adresse}, {client.codePostal} {client.ville}
+              </div>
+            ) : null
+          },
+          {
+            header: 'Appareils',
+            render: (client) => (
+              <div style={{ fontSize: '0.875rem' }}>
+                {client.appareils?.length > 0 ? (
+                  client.appareils.map((app, idx) => (
+                    <div key={idx} style={{ color: 'var(--neutral-600)' }}>
+                      {app.type} {app.marque}
+                    </div>
+                  ))
+                ) : (
+                  <span style={{ color: 'var(--neutral-400)' }}>Aucun</span>
+                )}
+              </div>
+            )
+          },
+          {
+            header: 'Actions',
+            headerStyle: { width: '120px', textAlign: 'center' },
+            render: (client) => (
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleEdit(client); }}>
+                  <Edit size={16} />
+                </button>
+                <button
+                  className="btn-icon"
+                  onClick={(e) => { e.stopPropagation(); handleDelete(client._id); }}
+                  style={{ color: 'var(--red-500)' }}
                 >
-                  <td>
-                    <div style={{ fontWeight: 600 }}>
-                      {client.nom} {client.prenom}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}>
-                        <Phone size={14} style={{ color: 'var(--neutral-500)' }} />
-                        {client.telephone}
-                      </div>
-                      {client.email && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}>
-                          <Mail size={14} style={{ color: 'var(--neutral-500)' }} />
-                          {client.email}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    {client.adresse && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}>
-                        <MapPin size={14} style={{ color: 'var(--neutral-500)' }} />
-                        {client.adresse}, {client.codePostal} {client.ville}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <div style={{ fontSize: '0.875rem' }}>
-                      {client.appareils?.length > 0 ? (
-                        client.appareils.map((app, idx) => (
-                          <div key={idx} style={{ color: 'var(--neutral-600)' }}>
-                            {app.type} {app.marque}
-                          </div>
-                        ))
-                      ) : (
-                        <span style={{ color: 'var(--neutral-400)' }}>Aucun</span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleEdit(client); }}>
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        className="btn-icon"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(client._id); }}
-                        style={{ color: 'var(--red-500)' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )
+          }
+        ]}
+        mobileCardConfig={{
+          title: (client) => `${client.nom} ${client.prenom}`,
+          subtitle: (client) => client.telephone,
+          fields: [
+            {
+              label: 'Email',
+              render: (client) => client.email || '-'
+            },
+            {
+              label: 'Ville',
+              render: (client) => client.ville || '-'
+            },
+            {
+              label: 'Appareils',
+              render: (client) => client.appareils?.length || 0
+            }
+          ],
+          actions: (client) => (
+            <>
+              <button className="btn-icon" onClick={(e) => { e.stopPropagation(); handleEdit(client); }}>
+                <Edit size={16} />
+              </button>
+              <button
+                className="btn-icon"
+                onClick={(e) => { e.stopPropagation(); handleDelete(client._id); }}
+                style={{ color: 'var(--red-500)' }}
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )
+        }}
+        emptyMessage="Aucun client trouvé"
+      />
 
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div style={{
-              padding: 'var(--space-4)',
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 'var(--space-2)',
-              borderTop: '1px solid var(--neutral-200)'
-            }}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-                disabled={pagination.page === 1}
-              >
-                Précédent
-              </button>
-              <span style={{ padding: 'var(--space-3)', color: 'var(--neutral-600)' }}>
-                Page {pagination.page} sur {pagination.totalPages}
-              </span>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                disabled={pagination.page === pagination.totalPages}
-              >
-                Suivant
-              </button>
-            </div>
-          )}
+      {/* Pagination */}
+      {!loading && pagination.totalPages > 1 && (
+        <div style={{
+          padding: 'var(--space-4)',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 'var(--space-2)',
+          marginTop: 'var(--space-4)'
+        }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+            disabled={pagination.page === 1}
+          >
+            Précédent
+          </button>
+          <span style={{ padding: 'var(--space-3)', color: 'var(--neutral-600)' }}>
+            Page {pagination.page} sur {pagination.totalPages}
+          </span>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+            disabled={pagination.page === pagination.totalPages}
+          >
+            Suivant
+          </button>
         </div>
       )}
 
       {/* Modal formulaire */}
       {showModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: 'var(--space-4)'
-        }}>
-          <div className="card animate-slide-in" style={{
+        <div className="modal-container" onClick={handleCloseModal}>
+          <div className="card modal-content animate-slide-in" style={{
             width: '100%',
             maxWidth: '600px',
             maxHeight: '90vh',
             overflowY: 'auto'
-          }}>
+          }} onClick={(e) => e.stopPropagation()}>
             <h2 style={{ marginBottom: 'var(--space-6)' }}>
               {editingClient ? 'Modifier le client' : 'Nouveau client'}
             </h2>

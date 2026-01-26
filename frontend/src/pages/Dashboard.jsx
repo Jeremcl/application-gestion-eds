@@ -209,7 +209,7 @@ const Dashboard = () => {
       </div>
 
       {/* CHATBOT IA - Interface complète */}
-      <div style={{
+      <div className="chatbot-container" style={{
         background: 'white',
         borderRadius: 'var(--radius-xl)',
         boxShadow: 'var(--shadow-md)',

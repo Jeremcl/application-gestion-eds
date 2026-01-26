@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon, MonitorSmartphone, FileStack, Truck } from 'lucide-react';
+import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon, MonitorSmartphone, FileStack, Truck, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { pieces, maintenance as maintenanceAPI, appareilsPret } from '../services/api';
@@ -14,6 +14,7 @@ const Layout = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [maintenanceStatus, setMaintenanceStatus] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
 
   useEffect(() => {
@@ -97,8 +98,16 @@ const Layout = ({ children }) => {
 
   return (
     <div className="app-container">
+      {/* Overlay mobile */}
+      {isMobileMenuOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isMobileMenuOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-logo">
           <img src={logoEDS} alt="EDS Logo" className="sidebar-logo-img" />
           <div className="sidebar-logo-text">EDS22</div>
@@ -110,6 +119,7 @@ const Layout = ({ children }) => {
               key={item.path}
               to={item.path}
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              onClick={() => setIsMobileMenuOpen(false)}
             >
               <item.icon size={20} />
               <span>{item.label}</span>
@@ -120,7 +130,7 @@ const Layout = ({ children }) => {
 
         <div className="nav-divider"></div>
 
-        <div className="nav-item" onClick={handleLogout} style={{ cursor: 'pointer' }}>
+        <div className="nav-item" onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} style={{ cursor: 'pointer' }}>
           <LogOut size={20} />
           <span>Déconnexion</span>
         </div>
@@ -128,6 +138,14 @@ const Layout = ({ children }) => {
 
       {/* Header */}
       <header className="header">
+        <button
+          className="hamburger-btn"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Menu"
+        >
+          <Menu size={24} />
+        </button>
+
         <div className="header-search">
           <Search size={18} className="header-search-icon" />
           <input type="text" placeholder="Rechercher un client, une intervention..." />
@@ -140,11 +158,12 @@ const Layout = ({ children }) => {
           </div>
 
           <div className="header-user" ref={userMenuRef} style={{ position: 'relative' }}>
-            <div 
+            <div
               onClick={() => setShowUserMenu(!showUserMenu)}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+              className="header-user-trigger"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
                 gap: 'var(--space-2)',
                 cursor: 'pointer',
                 padding: '6px 10px',
@@ -165,19 +184,20 @@ const Layout = ({ children }) => {
               <div className="user-avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}>
                 {user?.nom?.charAt(0) || 'U'}
               </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{user?.nom}</div>
-                <div style={{ fontSize: '0.6875rem', color: 'var(--neutral-500)' }}>
+              <div className="user-info">
+                <div className="user-name" style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{user?.nom}</div>
+                <div className="user-role" style={{ fontSize: '0.6875rem', color: 'var(--neutral-500)' }}>
                   {user?.role === 'admin' ? 'Administrateur' : 'Technicien'}
                 </div>
               </div>
-              <ChevronDown 
-                size={14} 
-                style={{ 
+              <ChevronDown
+                className="user-chevron"
+                size={14}
+                style={{
                   color: 'var(--neutral-500)',
                   transition: 'transform var(--transition-fast)',
                   transform: showUserMenu ? 'rotate(180deg)' : 'rotate(0deg)'
-                }} 
+                }}
               />
             </div>
 

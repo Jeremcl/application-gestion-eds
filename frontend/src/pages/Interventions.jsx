@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, List, LayoutGrid, Edit, Trash2, Eye } from 'lucide-react';
 import { interventions as interventionsAPI } from '../services/api';
 import InterventionModal from '../components/InterventionModal';
+import ResponsiveTable from '../components/ResponsiveTable';
 
 const Interventions = () => {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ const Interventions = () => {
 
       {/* Filtres */}
       <div className="card mb-6" style={{ padding: 'var(--space-4)' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+        <div className="filters-scroll">
           <button
             className={`btn ${!filterStatut ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => { setFilterStatut(''); setCurrentPage(1); }}
@@ -137,92 +138,136 @@ const Interventions = () => {
         <>
           {/* Vue Liste */}
           {viewMode === 'list' && (
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Numéro</th>
-                    <th>Client</th>
-                    <th>Appareil</th>
-                    <th>Description</th>
-                    <th>Statut</th>
-                    <th>Technicien</th>
-                    <th>Date</th>
-                    <th style={{ width: '150px', textAlign: 'center' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {interventions.map((int) => (
-                    <tr
-                      key={int._id}
-                      onClick={() => handleView(int._id)}
-                      style={{ cursor: 'pointer' }}
+            <ResponsiveTable
+              data={interventions}
+              onRowClick={(int) => handleView(int._id)}
+              columns={[
+                {
+                  header: 'Numéro',
+                  render: (int) => (
+                    <span style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
+                      {int.numero}
+                    </span>
+                  )
+                },
+                {
+                  header: 'Client',
+                  render: (int) => `${int.clientId?.nom || ''} ${int.clientId?.prenom || ''}`
+                },
+                {
+                  header: 'Appareil',
+                  render: (int) => (
+                    <div style={{ fontSize: '0.875rem' }}>
+                      <div style={{ fontWeight: 600 }}>{int.appareil?.type}</div>
+                      <div style={{ color: 'var(--neutral-500)' }}>
+                        {int.appareil?.marque} {int.appareil?.modele}
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  header: 'Description',
+                  cellStyle: { maxWidth: '200px', fontSize: '0.875rem' },
+                  render: (int) => `${int.description?.substring(0, 60) || ''}...`
+                },
+                {
+                  header: 'Statut',
+                  render: (int) => (
+                    <span className={`badge badge-${statutColors[int.statut]}`}>
+                      {int.statut}
+                    </span>
+                  )
+                },
+                {
+                  header: 'Technicien',
+                  cellStyle: { fontSize: '0.875rem' },
+                  render: (int) => int.technicien || '-'
+                },
+                {
+                  header: 'Date',
+                  cellStyle: { fontSize: '0.875rem' },
+                  render: (int) => new Date(int.dateCreation).toLocaleDateString('fr-FR')
+                },
+                {
+                  header: 'Actions',
+                  headerStyle: { width: '150px', textAlign: 'center' },
+                  render: (int) => (
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button className="btn-icon" onClick={(e) => handleView(int._id, e)} title="Voir">
+                        <Eye size={16} />
+                      </button>
+                      <button className="btn-icon" onClick={(e) => handleEdit(int, e)} title="Modifier">
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={(e) => handleDelete(int._id, e)}
+                        style={{ color: 'var(--red-500)' }}
+                        title="Supprimer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )
+                }
+              ]}
+              mobileCardConfig={{
+                title: (int) => int.numero,
+                subtitle: (int) => `${int.clientId?.nom || ''} ${int.clientId?.prenom || ''}`,
+                badge: (int) => (
+                  <span className={`badge badge-${statutColors[int.statut]}`}>
+                    {int.statut}
+                  </span>
+                ),
+                fields: [
+                  {
+                    label: 'Appareil',
+                    render: (int) => `${int.appareil?.type || ''} ${int.appareil?.marque || ''}`
+                  },
+                  {
+                    label: 'Technicien',
+                    render: (int) => int.technicien || '-'
+                  },
+                  {
+                    label: 'Date',
+                    render: (int) => new Date(int.dateCreation).toLocaleDateString('fr-FR')
+                  }
+                ],
+                actions: (int) => (
+                  <>
+                    <button className="btn-icon" onClick={(e) => handleView(int._id, e)} title="Voir">
+                      <Eye size={16} />
+                    </button>
+                    <button className="btn-icon" onClick={(e) => handleEdit(int, e)} title="Modifier">
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      className="btn-icon"
+                      onClick={(e) => handleDelete(int._id, e)}
+                      style={{ color: 'var(--red-500)' }}
+                      title="Supprimer"
                     >
-                      <td style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
-                        {int.numero}
-                      </td>
-                      <td>
-                        {int.clientId?.nom} {int.clientId?.prenom}
-                      </td>
-                      <td>
-                        <div style={{ fontSize: '0.875rem' }}>
-                          <div style={{ fontWeight: 600 }}>{int.appareil.type}</div>
-                          <div style={{ color: 'var(--neutral-500)' }}>
-                            {int.appareil.marque} {int.appareil.modele}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ maxWidth: '200px', fontSize: '0.875rem' }}>
-                        {int.description?.substring(0, 60)}...
-                      </td>
-                      <td>
-                        <span className={`badge badge-${statutColors[int.statut]}`}>
-                          {int.statut}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: '0.875rem' }}>
-                        {int.technicien || '-'}
-                      </td>
-                      <td style={{ fontSize: '0.875rem' }}>
-                        {new Date(int.dateCreation).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                          <button className="btn-icon" onClick={(e) => handleView(int._id, e)} title="Voir">
-                            <Eye size={16} />
-                          </button>
-                          <button className="btn-icon" onClick={(e) => handleEdit(int, e)} title="Modifier">
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            className="btn-icon"
-                            onClick={(e) => handleDelete(int._id, e)}
-                            style={{ color: 'var(--red-500)' }}
-                            title="Supprimer"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      <Trash2 size={16} />
+                    </button>
+                  </>
+                )
+              }}
+              emptyMessage="Aucune intervention trouvée"
+            />
           )}
 
           {/* Vue Kanban */}
           {viewMode === 'kanban' && (
-            <div style={{
+            <div className="kanban-container" style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
               gap: 'var(--space-4)',
               overflowX: 'auto'
             }}>
               {statuts.map(statut => {
                 const statutInterventions = getInterventionsByStatut(statut);
                 return (
-                  <div key={statut} className="card" style={{ minHeight: '400px' }}>
+                  <div key={statut} className="card kanban-column" style={{ minHeight: '400px' }}>
                     <div style={{
                       marginBottom: 'var(--space-4)',
                       paddingBottom: 'var(--space-3)',

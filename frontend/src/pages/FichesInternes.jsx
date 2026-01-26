@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Plus, FileText, Download, X, Search, Eye } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, FileText, Download, X, Search, Eye, Smartphone } from 'lucide-react';
 import { fichesInternes as fichesAPI, clients as clientsAPI, appareilsPret as appareilsPretAPI } from '../services/api';
+import ResponsiveTable from '../components/ResponsiveTable';
 
 const FichesInternes = () => {
   const [fiches, setFiches] = useState([]);
@@ -12,6 +13,12 @@ const FichesInternes = () => {
   const [previewFicheId, setPreviewFicheId] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Détecter si on est sur mobile
+  const isMobile = useMemo(() => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           window.innerWidth <= 768;
+  }, []);
 
   useEffect(() => {
     loadFiches();
@@ -165,7 +172,7 @@ const FichesInternes = () => {
 
       {/* Filtres */}
       <div style={{ marginBottom: 'var(--space-4)' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <div className="filters-scroll">
           <button
             className={`btn ${!typeFilter ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setTypeFilter('')}
@@ -194,74 +201,108 @@ const FichesInternes = () => {
       </div>
 
       {/* Table */}
-      {loading ? (
-        <div className="card" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-          Chargement...
-        </div>
-      ) : fiches.length === 0 ? (
-        <div className="card" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-          <p style={{ color: 'var(--neutral-600)' }}>Aucune fiche générée</p>
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Numéro</th>
-                <th>Type</th>
-                <th>Client</th>
-                <th>Date de génération</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fiches.map((fiche) => (
-                <tr key={fiche._id}>
-                  <td style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
-                    {fiche.numero}
-                  </td>
-                  <td>
-                    <span className={`badge badge-${typeColors[fiche.type]}`}>
-                      {typeLabels[fiche.type]}
-                    </span>
-                  </td>
-                  <td>
-                    {fiche.data?.client?.nom ? `${fiche.data.client.nom} ${fiche.data.client.prenom}` : '-'}
-                  </td>
-                  <td style={{ fontSize: '0.875rem' }}>
-                    {new Date(fiche.dateGeneration).toLocaleDateString('fr-FR')} à {new Date(fiche.dateGeneration).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handlePreviewFiche(fiche._id)}
-                        title="Visualiser le PDF"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleDownloadFiche(fiche._id)}
-                        title="Télécharger le PDF"
-                      >
-                        <Download size={16} />
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDeleteFiche(fiche._id)}
-                        title="Supprimer"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ResponsiveTable
+        loading={loading}
+        data={fiches}
+        columns={[
+          {
+            header: 'Numéro',
+            render: (fiche) => (
+              <span style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
+                {fiche.numero}
+              </span>
+            )
+          },
+          {
+            header: 'Type',
+            render: (fiche) => (
+              <span className={`badge badge-${typeColors[fiche.type]}`}>
+                {typeLabels[fiche.type]}
+              </span>
+            )
+          },
+          {
+            header: 'Client',
+            render: (fiche) => fiche.data?.client?.nom ? `${fiche.data.client.nom} ${fiche.data.client.prenom}` : '-'
+          },
+          {
+            header: 'Date de génération',
+            cellStyle: { fontSize: '0.875rem' },
+            render: (fiche) => `${new Date(fiche.dateGeneration).toLocaleDateString('fr-FR')} à ${new Date(fiche.dateGeneration).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+          },
+          {
+            header: 'Actions',
+            render: (fiche) => (
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <button
+                  className="btn-icon"
+                  onClick={() => handlePreviewFiche(fiche._id)}
+                  title="Visualiser le PDF"
+                >
+                  <Eye size={16} />
+                </button>
+                <button
+                  className="btn-icon"
+                  onClick={() => handleDownloadFiche(fiche._id)}
+                  title="Télécharger le PDF"
+                >
+                  <Download size={16} />
+                </button>
+                <button
+                  className="btn-icon"
+                  onClick={() => handleDeleteFiche(fiche._id)}
+                  style={{ color: 'var(--red-500)' }}
+                  title="Supprimer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )
+          }
+        ]}
+        mobileCardConfig={{
+          title: (fiche) => fiche.numero,
+          subtitle: (fiche) => fiche.data?.client?.nom ? `${fiche.data.client.nom} ${fiche.data.client.prenom}` : '-',
+          badge: (fiche) => (
+            <span className={`badge badge-${typeColors[fiche.type]}`}>
+              {typeLabels[fiche.type]}
+            </span>
+          ),
+          fields: [
+            {
+              label: 'Date',
+              render: (fiche) => new Date(fiche.dateGeneration).toLocaleDateString('fr-FR')
+            }
+          ],
+          actions: (fiche) => (
+            <>
+              <button
+                className="btn-icon"
+                onClick={() => handlePreviewFiche(fiche._id)}
+                title="Visualiser le PDF"
+              >
+                <Eye size={16} />
+              </button>
+              <button
+                className="btn-icon"
+                onClick={() => handleDownloadFiche(fiche._id)}
+                title="Télécharger le PDF"
+              >
+                <Download size={16} />
+              </button>
+              <button
+                className="btn-icon"
+                onClick={() => handleDeleteFiche(fiche._id)}
+                style={{ color: 'var(--red-500)' }}
+                title="Supprimer"
+              >
+                <X size={16} />
+              </button>
+            </>
+          )
+        }}
+        emptyMessage="Aucune fiche générée"
+      />
 
       {/* Modal création */}
       {showModal && (
@@ -345,6 +386,46 @@ const FichesInternes = () => {
                   color: 'var(--neutral-600)'
                 }}>
                   Chargement du PDF...
+                </div>
+              ) : isMobile ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  padding: 'var(--space-6)',
+                  textAlign: 'center',
+                  gap: 'var(--space-4)'
+                }}>
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: 'var(--radius-full)',
+                    background: 'var(--primary-50)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Smartphone size={40} style={{ color: 'var(--primary-500)' }} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
+                      Prévisualisation sur mobile
+                    </h3>
+                    <p style={{ color: 'var(--neutral-600)', fontSize: '0.875rem', marginBottom: 'var(--space-4)' }}>
+                      La prévisualisation PDF n'est pas disponible sur mobile.
+                      Téléchargez le fichier pour le visualiser.
+                    </p>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handleDownloadFiche(previewFicheId)}
+                      style={{ width: '100%', maxWidth: '280px' }}
+                    >
+                      <Download size={18} />
+                      Télécharger le PDF
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <iframe
@@ -451,20 +532,8 @@ const ModalCreationFiche = ({ onClose, onSuccess }) => {
   );
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 2000,
-      padding: 'var(--space-4)'
-    }} onClick={onClose}>
-      <div className="card" style={{
+    <div className="modal-container" style={{ zIndex: 2000 }} onClick={onClose}>
+      <div className="card modal-content" style={{
         maxWidth: '800px',
         width: '100%',
         maxHeight: '90vh',

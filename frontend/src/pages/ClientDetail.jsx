@@ -136,7 +136,9 @@ const ClientDetail = () => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          marginBottom: 'var(--space-4)'
+          marginBottom: 'var(--space-4)',
+          flexWrap: 'wrap',
+          gap: 'var(--space-4)'
         }}>
           <div>
             <h1 style={{
@@ -148,26 +150,26 @@ const ClientDetail = () => {
               {client.nom} {client.prenom}
             </h1>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <div className="filters-scroll" style={{ gap: 'var(--space-2)' }}>
             <button
               className="btn btn-primary"
               onClick={() => setShowInterventionModal(true)}
             >
               <Wrench size={18} />
-              Nouvelle intervention
+              <span className="btn-text-mobile">Intervention</span>
             </button>
             <button
               className="btn btn-secondary"
               onClick={() => setShowPretModal(true)}
             >
               <MonitorSmartphone size={18} />
-              Prêter un appareil
+              <span className="btn-text-mobile">Prêt</span>
             </button>
             <button
               className="btn btn-secondary"
               onClick={() => navigate('/clients')}
             >
-              Retour à la liste
+              Retour
             </button>
           </div>
         </div>
@@ -262,24 +264,11 @@ const ClientDetail = () => {
 
       {/* Device Modal */}
       {showDeviceModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: 'var(--space-4)'
-        }}>
-          <div className="card animate-slide-in" style={{
+        <div className="modal-container" onClick={handleCloseModal}>
+          <div className="card modal-content animate-slide-in" style={{
             width: '100%',
             maxWidth: '500px'
-          }}>
+          }} onClick={(e) => e.stopPropagation()}>
             <h2 style={{ marginBottom: 'var(--space-6)' }}>
               {editingDevice ? 'Modifier l\'appareil' : 'Nouvel appareil'}
             </h2>
