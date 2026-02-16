@@ -198,12 +198,36 @@ const Clients = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}>
                   <Phone size={14} style={{ color: 'var(--neutral-500)' }} />
-                  {client.telephone}
+                  <a
+                    href={`tel:${client.telephone}`}
+                    style={{
+                      color: 'var(--primary-600)',
+                      textDecoration: 'none',
+                      cursor: 'pointer'
+                    }}
+                    onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                    onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {client.telephone}
+                  </a>
                 </div>
                 {client.email && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem' }}>
                     <Mail size={14} style={{ color: 'var(--neutral-500)' }} />
-                    {client.email}
+                    <a
+                      href={`mailto:${client.email}`}
+                      style={{
+                        color: 'var(--primary-600)',
+                        textDecoration: 'none',
+                        cursor: 'pointer'
+                      }}
+                      onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                      onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {client.email}
+                    </a>
                   </div>
                 )}
               </div>
@@ -255,11 +279,39 @@ const Clients = () => {
         ]}
         mobileCardConfig={{
           title: (client) => `${client.nom} ${client.prenom}`,
-          subtitle: (client) => client.telephone,
+          subtitle: (client) => (
+            <a
+              href={`tel:${client.telephone}`}
+              style={{
+                color: 'var(--primary-600)',
+                textDecoration: 'none',
+                cursor: 'pointer'
+              }}
+              onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+              onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {client.telephone}
+            </a>
+          ),
           fields: [
             {
               label: 'Email',
-              render: (client) => client.email || '-'
+              render: (client) => client.email ? (
+                <a
+                  href={`mailto:${client.email}`}
+                  style={{
+                    color: 'var(--primary-600)',
+                    textDecoration: 'none',
+                    cursor: 'pointer'
+                  }}
+                  onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                  onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {client.email}
+                </a>
+              ) : '-'
             },
             {
               label: 'Ville',

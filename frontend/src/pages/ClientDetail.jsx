@@ -178,12 +178,34 @@ const ClientDetail = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
               <Phone size={18} style={{ color: 'var(--neutral-500)' }} />
-              <span>{client.telephone}</span>
+              <a
+                href={`tel:${client.telephone}`}
+                style={{
+                  color: 'var(--primary-600)',
+                  textDecoration: 'none',
+                  cursor: 'pointer'
+                }}
+                onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+              >
+                {client.telephone}
+              </a>
             </div>
             {client.email && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                 <Mail size={18} style={{ color: 'var(--neutral-500)' }} />
-                <span>{client.email}</span>
+                <a
+                  href={`mailto:${client.email}`}
+                  style={{
+                    color: 'var(--primary-600)',
+                    textDecoration: 'none',
+                    cursor: 'pointer'
+                  }}
+                  onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                  onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                >
+                  {client.email}
+                </a>
               </div>
             )}
           </div>

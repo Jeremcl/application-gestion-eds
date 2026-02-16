@@ -214,9 +214,19 @@ const InterventionDetail = () => {
             </div>
           </div>
           {intervention.clientId?.telephone && (
-            <div style={{ fontSize: '0.875rem', color: 'var(--neutral-600)' }}>
+            <a
+              href={`tel:${intervention.clientId.telephone}`}
+              style={{
+                fontSize: '0.875rem',
+                color: 'var(--primary-600)',
+                textDecoration: 'none',
+                cursor: 'pointer'
+              }}
+              onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+              onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+            >
               {intervention.clientId.telephone}
-            </div>
+            </a>
           )}
         </div>
 
