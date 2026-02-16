@@ -83,6 +83,12 @@ const interventionSchema = new mongoose.Schema({
     default: 0
   },
   photos: [String],
+  // Dépôt atelier
+  photosDepot: [String],
+  accessoiresDepot: [String],
+  dateDepot: Date,
+  qrCodeUrl: String,
+  ficheDAUrl: String,
   garantieJusquau: Date,
   notes: String,
   dateModification: {

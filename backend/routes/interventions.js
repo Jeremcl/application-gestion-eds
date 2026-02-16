@@ -177,4 +177,151 @@ router.get('/stats/dashboard', async (req, res) => {
   }
 });
 
+// POST Dépôt atelier - photos, accessoires, QR code, fiche DA
+router.post('/:id/depot-atelier', async (req, res) => {
+  try {
+    const { photosDepot, accessoiresDepot } = req.body;
+    const intervention = await Intervention.findById(req.params.id).populate('clientId');
+
+    if (!intervention) {
+      return res.status(404).json({ message: 'Intervention non trouvée' });
+    }
+
+    // Vérifier que c'est bien une intervention Atelier Planifiée
+    if (intervention.typeIntervention !== 'Atelier' || intervention.statut !== 'Planifié') {
+      return res.status(400).json({ message: 'Cette intervention ne peut pas être déposée en atelier' });
+    }
+
+    const QRCode = require('qrcode');
+    const fs = require('fs').promises;
+    const path = require('path');
+
+    // Créer les dossiers si nécessaire
+    const uploadsDir = path.join(__dirname, '../uploads');
+    const interventionsDir = path.join(uploadsDir, 'interventions', intervention._id.toString());
+    await fs.mkdir(interventionsDir, { recursive: true });
+
+    // Sauvegarder les photos
+    const photoUrls = [];
+    for (let i = 0; i < photosDepot.length; i++) {
+      const photoData = photosDepot[i].replace(/^data:image\/\w+;base64,/, '');
+      const photoPath = path.join(interventionsDir, `depot-${i}.jpg`);
+      await fs.writeFile(photoPath, photoData, 'base64');
+      photoUrls.push(`/uploads/interventions/${intervention._id}/depot-${i}.jpg`);
+    }
+
+    // Générer le QR code
+    const interventionUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/interventions/${intervention._id}`;
+    const qrCodePath = path.join(interventionsDir, 'qrcode.png');
+    await QRCode.toFile(qrCodePath, interventionUrl, {
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#2D5A3D',
+        light: '#FFFFFF'
+      }
+    });
+    const qrCodeUrl = `/uploads/interventions/${intervention._id}/qrcode.png`;
+
+    // Générer la fiche DA (PDF)
+    const PDFDocument = require('pdfkit');
+    const ficheDAPath = path.join(interventionsDir, 'fiche-da.pdf');
+    const doc = new PDFDocument({ margin: 50 });
+    const stream = require('fs').createWriteStream(ficheDAPath);
+
+    doc.pipe(stream);
+
+    // En-tête
+    doc.fontSize(20).fillColor('#2D5A3D').text('FICHE DE DÉPÔT ATELIER', { align: 'center' });
+    doc.moveDown();
+
+    // Informations intervention
+    doc.fontSize(12).fillColor('#000000');
+    doc.text(`N° Intervention: ${intervention.numero}`, 50, 120);
+    doc.text(`Date de dépôt: ${new Date().toLocaleDateString('fr-FR')}`, 50, 140);
+    doc.moveDown();
+
+    // Client
+    doc.fontSize(14).fillColor('#2D5A3D').text('CLIENT', 50, 180);
+    doc.fontSize(10).fillColor('#000000');
+    doc.text(`Nom: ${intervention.clientId?.nom} ${intervention.clientId?.prenom}`, 50, 200);
+    doc.text(`Téléphone: ${intervention.clientId?.telephone}`, 50, 215);
+    if (intervention.clientId?.email) {
+      doc.text(`Email: ${intervention.clientId?.email}`, 50, 230);
+    }
+    doc.moveDown();
+
+    // Appareil
+    doc.fontSize(14).fillColor('#2D5A3D').text('APPAREIL', 50, 260);
+    doc.fontSize(10).fillColor('#000000');
+    doc.text(`Type: ${intervention.appareil?.type || 'Non spécifié'}`, 50, 280);
+    doc.text(`Marque: ${intervention.appareil?.marque || 'Non spécifiée'}`, 50, 295);
+    doc.text(`Modèle: ${intervention.appareil?.modele || 'Non spécifié'}`, 50, 310);
+    if (intervention.appareil?.numeroSerie) {
+      doc.text(`N° Série: ${intervention.appareil.numeroSerie}`, 50, 325);
+    }
+    doc.moveDown();
+
+    // Problème
+    doc.fontSize(14).fillColor('#2D5A3D').text('PROBLÈME SIGNALÉ', 50, 355);
+    doc.fontSize(10).fillColor('#000000');
+    doc.text(intervention.description || 'Non spécifié', 50, 375, { width: 500 });
+    doc.moveDown();
+
+    // Accessoires
+    doc.fontSize(14).fillColor('#2D5A3D').text('ACCESSOIRES REMIS', 50, 430);
+    doc.fontSize(10).fillColor('#000000');
+    if (accessoiresDepot && accessoiresDepot.length > 0) {
+      let yPos = 450;
+      accessoiresDepot.forEach(accessoire => {
+        doc.text(`• ${accessoire}`, 50, yPos);
+        yPos += 15;
+      });
+    } else {
+      doc.text('Aucun accessoire remis', 50, 450);
+    }
+
+    // QR Code
+    doc.fontSize(14).fillColor('#2D5A3D').text('QR CODE', 50, 580);
+    doc.fontSize(9).fillColor('#666666').text('Scannez pour accéder à l\'intervention', 50, 600);
+    doc.image(qrCodePath, 50, 615, { width: 100 });
+
+    // Signature
+    doc.fontSize(10).fillColor('#000000');
+    doc.text('Signature client:', 350, 650);
+    doc.text('_____________________', 350, 670);
+
+    doc.end();
+
+    // Attendre que le PDF soit créé
+    await new Promise((resolve, reject) => {
+      stream.on('finish', resolve);
+      stream.on('error', reject);
+    });
+
+    const ficheDAUrl = `/uploads/interventions/${intervention._id}/fiche-da.pdf`;
+
+    // Mettre à jour l'intervention
+    intervention.photosDepot = photoUrls;
+    intervention.accessoiresDepot = accessoiresDepot;
+    intervention.dateDepot = new Date();
+    intervention.qrCodeUrl = qrCodeUrl;
+    intervention.ficheDAUrl = ficheDAUrl;
+    intervention.statut = 'En cours'; // Changer le statut
+    await intervention.save();
+
+    console.log('✅ Dépôt atelier complété:', intervention.numero);
+
+    res.json({
+      message: 'Dépôt atelier enregistré avec succès',
+      qrCodeUrl,
+      ficheDAUrl,
+      intervention
+    });
+  } catch (error) {
+    console.error('❌ Erreur dépôt atelier:', error);
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
 module.exports = router;

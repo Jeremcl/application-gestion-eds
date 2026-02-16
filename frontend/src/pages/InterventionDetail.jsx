@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Wrench, User, Monitor, Calendar, Clock, Euro,
-  FileText, Package, Edit, Trash2, CheckCircle, XCircle, MonitorSmartphone, ChevronRight
+  FileText, Package, Edit, Trash2, CheckCircle, XCircle, MonitorSmartphone, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { interventions as interventionsAPI } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import InterventionModal from '../components/InterventionModal';
+import DepotAtelierModal from '../components/DepotAtelierModal';
 
 const statusColors = {
   'Demande': 'var(--blue-500)',
@@ -24,6 +25,7 @@ const InterventionDetail = () => {
   const [intervention, setIntervention] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDepotModal, setShowDepotModal] = useState(false);
 
   useEffect(() => {
     loadIntervention();
@@ -142,7 +144,17 @@ const InterventionDetail = () => {
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+            {intervention.statut === 'Planifié' && intervention.typeIntervention === 'Atelier' && !intervention.dateDepot && (
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowDepotModal(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
+              >
+                <ClipboardList size={18} />
+                Commencer le dépôt atelier
+              </button>
+            )}
             <button className="btn btn-secondary" onClick={() => setShowEditModal(true)}>
               <Edit size={18} />
               Modifier
@@ -463,6 +475,18 @@ const InterventionDetail = () => {
         }}
         editingIntervention={intervention}
       />
+
+      {/* Depot Atelier Modal */}
+      {intervention && (
+        <DepotAtelierModal
+          show={showDepotModal}
+          onClose={() => setShowDepotModal(false)}
+          intervention={intervention}
+          onSuccess={() => {
+            loadIntervention();
+          }}
+        />
+      )}
     </div>
   );
 };

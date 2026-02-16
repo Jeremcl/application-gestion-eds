@@ -150,6 +150,10 @@ export const interventions = {
   getStats: async () => {
     const response = await api.get('/api/interventions/stats/dashboard');
     return response;
+  },
+  completeDepotAtelier: async (id, data) => {
+    const response = await api.post(`/api/interventions/${id}/depot-atelier`, data);
+    return response;
   }
 };
 
