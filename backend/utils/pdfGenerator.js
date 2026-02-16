@@ -239,24 +239,6 @@ const genererFicheDepot = (data, stream) => {
     { width: contentWidth, align: 'center' }
   );
 
-  // === LOGO EN BAS À DROITE (PETIT) ===
-  const logoPath = path.join(__dirname, '..', 'assets', 'Logo-eds-vert.svg');
-  try {
-    if (fs.existsSync(logoPath)) {
-      const svgContent = fs.readFileSync(logoPath, 'utf8');
-      const logoSize = 50; // Taille réduite du logo
-      const logoX = rightMargin - logoSize - 5; // 5px de marge depuis le bord droit
-      const logoY = doc.page.height - doc.page.margins.bottom - logoSize - 5; // 5px de marge depuis le bas
-
-      doc.save();
-      doc.translate(logoX, logoY);
-      SVGtoPDF(doc, svgContent, 0, 0, { width: logoSize, height: logoSize });
-      doc.restore();
-    }
-  } catch (error) {
-    console.error('Erreur chargement logo:', error);
-  }
-
   doc.end();
   return doc;
 };
