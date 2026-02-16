@@ -199,12 +199,35 @@ const genererFicheDepot = (data, stream) => {
   // === SECTION SIGNATURE ===
 
   doc.fontSize(10).font('Helvetica').fillColor('#000000');
-  doc.text('FAIT À _______________, LE ___ / ___ / _______', leftMargin, doc.y, {
+  const dateSignature = new Date().toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  doc.text(`FAIT À GRÂCES, LE ${dateSignature}`, leftMargin, doc.y, {
     width: contentWidth,
     align: 'left'
   });
-  doc.moveDown(2);
-  doc.text('Signature', leftMargin, doc.y, { align: 'left' });
+  doc.moveDown(1);
+  doc.text('Signature du client :', leftMargin, doc.y, { align: 'left' });
+  doc.moveDown(0.5);
+
+  // Ajouter la signature si disponible
+  if (data.signaturePath && fs.existsSync(data.signaturePath)) {
+    try {
+      doc.image(data.signaturePath, leftMargin, doc.y, {
+        width: 200,
+        height: 80,
+        fit: [200, 80]
+      });
+      doc.moveDown(5);
+    } catch (error) {
+      console.error('Erreur chargement signature:', error);
+      doc.moveDown(4); // Espace pour signature manuelle si erreur
+    }
+  } else {
+    doc.moveDown(4); // Espace pour signature manuelle
+  }
 
   // === PIED DE PAGE - SIRET CENTRÉ ===
   const footerY = doc.page.height - doc.page.margins.bottom - 30;

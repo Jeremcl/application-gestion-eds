@@ -177,10 +177,10 @@ router.get('/stats/dashboard', async (req, res) => {
   }
 });
 
-// POST Dépôt atelier - photos, accessoires, QR code, fiche DA
+// POST Dépôt atelier - photos, accessoires, signature, QR code, fiche DA
 router.post('/:id/depot-atelier', async (req, res) => {
   try {
-    const { photosDepot, accessoiresDepot } = req.body;
+    const { photosDepot, accessoiresDepot, signature } = req.body;
     const intervention = await Intervention.findById(req.params.id).populate('clientId');
 
     if (!intervention) {
@@ -212,6 +212,15 @@ router.post('/:id/depot-atelier', async (req, res) => {
       const photoPath = path.join(interventionsDir, `depot-${i}.jpg`);
       await fs.writeFile(photoPath, photoData, 'base64');
       photoUrls.push(`${apiBaseUrl}/uploads/interventions/${intervention._id}/depot-${i}.jpg`);
+    }
+
+    // Sauvegarder la signature
+    let signatureUrl = null;
+    if (signature) {
+      const signatureData = signature.replace(/^data:image\/\w+;base64,/, '');
+      const signaturePath = path.join(interventionsDir, 'signature.png');
+      await fs.writeFile(signaturePath, signatureData, 'base64');
+      signatureUrl = `${apiBaseUrl}/uploads/interventions/${intervention._id}/signature.png`;
     }
 
     // Générer le QR code
@@ -246,7 +255,8 @@ router.post('/:id/depot-atelier', async (req, res) => {
         modele: intervention.appareil?.modele || '',
         numeroSerie: intervention.appareil?.numeroSerie || ''
       },
-      accessoires: accessoiresDepot || []
+      accessoires: accessoiresDepot || [],
+      signaturePath: signature ? path.join(interventionsDir, 'signature.png') : null
     };
 
     // Générer le PDF avec le template DA 1.1
@@ -266,6 +276,7 @@ router.post('/:id/depot-atelier', async (req, res) => {
     intervention.dateDepot = new Date();
     intervention.qrCodeUrl = qrCodeUrl;
     intervention.ficheDAUrl = ficheDAUrl;
+    intervention.signatureUrl = signatureUrl;
     intervention.statut = 'En cours'; // Changer le statut
     await intervention.save();
 

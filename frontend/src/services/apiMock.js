@@ -255,6 +255,8 @@ export const interventions = {
     // Mettre à jour l'intervention
     intervention.photosDepot = data.photosDepot || [];
     intervention.accessoiresDepot = data.accessoiresDepot || [];
+    intervention.signature = data.signature;
+    intervention.signatureUrl = data.signature; // En mock, on utilise directement la signature base64
     intervention.dateDepot = new Date().toISOString();
     intervention.qrCodeUrl = mockQrCodeUrl;
     intervention.ficheDAUrl = mockFicheDAUrl;

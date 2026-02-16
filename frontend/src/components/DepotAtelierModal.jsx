@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { X, Camera, Check, FileText, QrCode, ChevronRight, Upload } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, Camera, Check, FileText, QrCode, ChevronRight, Upload, Trash2 } from 'lucide-react';
 import { interventions as interventionsAPI } from '../services/api';
 
 const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
@@ -9,8 +9,11 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
   const [accessoires, setAccessoires] = useState([]);
   const [customAccessoire, setCustomAccessoire] = useState('');
   const [qrCodeData, setQrCodeData] = useState(null);
+  const [signature, setSignature] = useState(null);
+  const [isDrawing, setIsDrawing] = useState(false);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const accessoiresList = [
     'Chargeur',
@@ -96,12 +99,93 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
     setAccessoires(accessoires.filter(a => a !== accessoire));
   };
 
+  // Gestion du canvas de signature
+  useEffect(() => {
+    if (currentStep === 3 && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+
+      // Configuration du canvas
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * 2; // Retina display
+      canvas.height = rect.height * 2;
+      ctx.scale(2, 2);
+
+      // Style
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Restaurer la signature si elle existe
+      if (signature) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, canvas.width / 2, canvas.height / 2);
+        };
+        img.src = signature;
+      }
+    }
+  }, [currentStep, signature]);
+
+  const startDrawing = (e) => {
+    if (!canvasRef.current) return;
+    setIsDrawing(true);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+
+    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing || !canvasRef.current) return;
+    e.preventDefault();
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+
+    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!canvasRef.current) return;
+    setIsDrawing(false);
+
+    // Sauvegarder la signature
+    const canvas = canvasRef.current;
+    setSignature(canvas.toDataURL('image/png'));
+  };
+
+  const clearSignature = () => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setSignature(null);
+  };
+
   const handleSubmit = async () => {
+    // Vérifier que la signature est présente
+    if (!signature) {
+      alert('Veuillez signer avant de valider le dépôt');
+      return;
+    }
     setLoading(true);
     try {
       const response = await interventionsAPI.completeDepotAtelier(intervention._id, {
         photosDepot: photos,
-        accessoiresDepot: accessoires
+        accessoiresDepot: accessoires,
+        signature: signature
       });
 
       setQrCodeData(response.data);
@@ -127,6 +211,7 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
     setCurrentStep(1);
     setPhotos([]);
     setAccessoires([]);
+    setSignature(null);
     setQrCodeData(null);
     onClose();
   };
@@ -543,6 +628,70 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
               </p>
             </div>
 
+            {/* Signature du client */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+                <h4>Signature du client *</h4>
+                {signature && (
+                  <button
+                    onClick={clearSignature}
+                    className="btn btn-secondary"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--space-2)',
+                      padding: 'var(--space-2) var(--space-3)',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    <Trash2 size={16} />
+                    Effacer
+                  </button>
+                )}
+              </div>
+              <p style={{ color: 'var(--neutral-600)', marginBottom: 'var(--space-3)', fontSize: '0.875rem' }}>
+                Le client doit signer pour certifier avoir remis l'appareil dans l'état décrit
+              </p>
+              <div style={{
+                border: '2px solid var(--primary-500)',
+                borderRadius: 'var(--radius-lg)',
+                background: 'white',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <canvas
+                  ref={canvasRef}
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    touchAction: 'none',
+                    cursor: 'crosshair'
+                  }}
+                />
+                {!signature && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    color: 'var(--neutral-400)',
+                    fontSize: '0.875rem',
+                    pointerEvents: 'none',
+                    textAlign: 'center'
+                  }}>
+                    Signez ici avec votre doigt ou votre souris
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
               <button onClick={() => setCurrentStep(2)} className="btn btn-secondary" disabled={loading}>
                 Retour
@@ -550,7 +699,7 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
               <button
                 onClick={handleSubmit}
                 className="btn btn-primary"
-                disabled={loading}
+                disabled={loading || !signature}
                 style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
               >
                 {loading ? 'Génération...' : 'Valider et générer'}

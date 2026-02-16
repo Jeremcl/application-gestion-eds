@@ -89,6 +89,7 @@ const interventionSchema = new mongoose.Schema({
   dateDepot: Date,
   qrCodeUrl: String,
   ficheDAUrl: String,
+  signatureUrl: String,
   garantieJusquau: Date,
   notes: String,
   dateModification: {
