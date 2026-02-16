@@ -95,21 +95,25 @@ const genererFicheDepot = (data, stream) => {
     align: 'center'
   });
 
-  // Puces vides (6 puces sur 2 colonnes)
+  // Puces pour les accessoires (2 colonnes)
   doc.fontSize(10).font('Helvetica');
   const bulletStartY = accessoiresY + 45;
   const bulletLeftX = leftMargin + 30;
   const bulletRightX = leftMargin + contentWidth / 2 + 10;
 
-  for (let i = 0; i < 3; i++) {
-    const bulletY = bulletStartY + (i * 25);
-    // Colonne gauche
-    doc.circle(bulletLeftX, bulletY + 5, 2).fill('#000000');
-    doc.text('', bulletLeftX + 10, bulletY, { width: colWidth - 50 });
+  // Si des accessoires sont fournis, les afficher
+  const accessoires = data.accessoires || [];
+  const maxAccessoires = 6; // Maximum de puces à afficher
 
-    // Colonne droite
-    doc.circle(bulletRightX, bulletY + 5, 2).fill('#000000');
-    doc.text('', bulletRightX + 10, bulletY, { width: colWidth - 50 });
+  for (let i = 0; i < maxAccessoires; i++) {
+    const bulletY = bulletStartY + (Math.floor(i / 2) * 25);
+    const isLeftColumn = i % 2 === 0;
+    const bulletX = isLeftColumn ? bulletLeftX : bulletRightX;
+    const accessoire = accessoires[i] || '';
+
+    // Dessiner la puce
+    doc.circle(bulletX, bulletY + 5, 2).fill('#000000');
+    doc.text(accessoire, bulletX + 10, bulletY, { width: colWidth - 50 });
   }
 
   doc.y = accessoiresY + accessoiresHeight + 20;
