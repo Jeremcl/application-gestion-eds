@@ -241,6 +241,34 @@ export const interventions = {
     }
     throw new Error('Intervention non trouvée');
   },
+  completeDepotAtelier: async (id, data) => {
+    await delay();
+    const intervention = mockInterventions.find(i => i._id === id);
+    if (!intervention) {
+      throw new Error('Intervention non trouvée');
+    }
+
+    // Simuler la génération du QR code et de la fiche DA
+    const mockQrCodeUrl = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==`;
+    const mockFicheDAUrl = `/uploads/interventions/${id}/fiche-da.pdf`;
+
+    // Mettre à jour l'intervention
+    intervention.photosDepot = data.photosDepot || [];
+    intervention.accessoiresDepot = data.accessoiresDepot || [];
+    intervention.dateDepot = new Date().toISOString();
+    intervention.qrCodeUrl = mockQrCodeUrl;
+    intervention.ficheDAUrl = mockFicheDAUrl;
+    intervention.statut = 'En cours';
+
+    return {
+      data: {
+        message: 'Dépôt atelier enregistré avec succès',
+        qrCodeUrl: mockQrCodeUrl,
+        ficheDAUrl: mockFicheDAUrl,
+        intervention
+      }
+    };
+  },
   getStats: async () => {
     await delay();
     return { data: mockStats };

@@ -7,6 +7,7 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [accessoires, setAccessoires] = useState([]);
+  const [customAccessoire, setCustomAccessoire] = useState('');
   const [qrCodeData, setQrCodeData] = useState(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -52,6 +53,17 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
     }
   };
 
+  const addCustomAccessoire = () => {
+    if (customAccessoire.trim() && !accessoires.includes(customAccessoire.trim())) {
+      setAccessoires([...accessoires, customAccessoire.trim()]);
+      setCustomAccessoire('');
+    }
+  };
+
+  const removeAccessoire = (accessoire) => {
+    setAccessoires(accessoires.filter(a => a !== accessoire));
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -65,7 +77,15 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
       onSuccess?.();
     } catch (error) {
       console.error('Erreur lors du dépôt atelier:', error);
-      alert('Erreur lors de l\'enregistrement du dépôt');
+      let errorMessage = 'Erreur lors de l\'enregistrement du dépôt';
+
+      if (error.response) {
+        errorMessage += `\n${error.response.data?.message || error.response.statusText}`;
+      } else if (error.message) {
+        errorMessage += `\n${error.message}`;
+      }
+
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -329,7 +349,7 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
               gap: 'var(--space-3)',
-              marginBottom: 'var(--space-6)'
+              marginBottom: 'var(--space-4)'
             }}>
               {accessoiresList.map((accessoire) => (
                 <label
@@ -359,6 +379,79 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
                   <span style={{ fontSize: '0.875rem' }}>{accessoire}</span>
                 </label>
               ))}
+            </div>
+
+            {/* Accessoires personnalisés ajoutés */}
+            {accessoires.filter(acc => !accessoiresList.includes(acc)).length > 0 && (
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <h4 style={{ fontSize: '0.875rem', marginBottom: 'var(--space-2)', color: 'var(--neutral-700)' }}>
+                  Accessoires personnalisés :
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                  {accessoires.filter(acc => !accessoiresList.includes(acc)).map((accessoire) => (
+                    <div
+                      key={accessoire}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--space-2)',
+                        padding: 'var(--space-2) var(--space-3)',
+                        background: 'var(--primary-50)',
+                        border: '2px solid var(--primary-500)',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      <span>{accessoire}</span>
+                      <button
+                        onClick={() => removeAccessoire(accessoire)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--red-500)',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          padding: '0',
+                          lineHeight: '1'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ajout accessoire personnalisé */}
+            <div className="card" style={{ background: 'var(--neutral-50)', padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+              <h4 style={{ fontSize: '0.875rem', marginBottom: 'var(--space-3)', color: 'var(--neutral-700)' }}>
+                Ajouter un accessoire personnalisé
+              </h4>
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={customAccessoire}
+                  onChange={(e) => setCustomAccessoire(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomAccessoire();
+                    }
+                  }}
+                  placeholder="Ex: Housse de protection"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  onClick={addCustomAccessoire}
+                  className="btn btn-primary"
+                  disabled={!customAccessoire.trim()}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  + Ajouter
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
