@@ -354,9 +354,9 @@ const Calendrier = () => {
                         alignItems: 'center',
                         gap: 'var(--space-1)'
                       }}
-                      title={`${intervention.clientId?.nom || 'Client'} - ${intervention.appareil?.type || 'Appareil'} - Cliquez pour voir les détails`}
+                      title={`${intervention.clientId?.nom || 'Client'} ${intervention.clientId?.prenom || ''} - ${intervention.appareil?.type || 'Appareil'} - Cliquez pour voir les détails`}
                     >
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase', fontWeight: '600' }}>
                         {intervention.clientId?.nom || 'Client'}
                       </span>
                       <Edit2 size={10} style={{ flexShrink: 0, opacity: 0.6 }} />
@@ -483,7 +483,7 @@ const Calendrier = () => {
                   }}>
                     <div>
                       <div style={{ fontWeight: '600', fontSize: '1rem', marginBottom: 'var(--space-1)' }}>
-                        {intervention.clientId?.nom} {intervention.clientId?.prenom}
+                        <span style={{ textTransform: 'uppercase' }}>{intervention.clientId?.nom}</span> {intervention.clientId?.prenom}
                       </div>
                       <div style={{ color: 'var(--neutral-600)', fontSize: '0.875rem' }}>
                         {intervention.appareil?.type} - {intervention.appareil?.marque}
