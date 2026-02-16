@@ -431,6 +431,141 @@ const InterventionDetail = () => {
         </div>
       </div>
 
+      {/* Dépôt Atelier */}
+      {intervention.dateDepot && (
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <ClipboardList size={20} style={{ color: 'var(--primary-600)' }} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Dépôt Atelier</h3>
+            </div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--neutral-600)' }}>
+              {new Date(intervention.dateDepot).toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          </div>
+
+          {/* Photos du dépôt */}
+          {intervention.photosDepot && intervention.photosDepot.length > 0 && (
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: 'var(--space-3)', color: 'var(--neutral-700)' }}>
+                Photos à la réception ({intervention.photosDepot.length})
+              </h4>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: 'var(--space-3)'
+              }}>
+                {intervention.photosDepot.map((photo, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      position: 'relative',
+                      paddingTop: '100%',
+                      borderRadius: 'var(--radius-lg)',
+                      overflow: 'hidden',
+                      boxShadow: 'var(--shadow-md)',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => window.open(photo, '_blank')}
+                  >
+                    <img
+                      src={photo}
+                      alt={`Photo dépôt ${index + 1}`}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Accessoires remis */}
+          {intervention.accessoiresDepot && intervention.accessoiresDepot.length > 0 && (
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: 'var(--space-3)', color: 'var(--neutral-700)' }}>
+                Accessoires remis
+              </h4>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 'var(--space-2)'
+              }}>
+                {intervention.accessoiresDepot.map((accessoire, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      padding: 'var(--space-2) var(--space-3)',
+                      background: 'var(--primary-50)',
+                      color: 'var(--primary-700)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.875rem',
+                      border: '1px solid var(--primary-200)'
+                    }}
+                  >
+                    {accessoire}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Documents */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: 'var(--space-3)',
+            padding: 'var(--space-4)',
+            background: 'var(--neutral-50)',
+            borderRadius: 'var(--radius-lg)'
+          }}>
+            {intervention.ficheDAUrl && (
+              <a
+                href={intervention.ficheDAUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', justifyContent: 'center' }}
+              >
+                <FileText size={18} />
+                Fiche de dépôt (PDF)
+              </a>
+            )}
+            {intervention.qrCodeUrl && (
+              <a
+                href={intervention.qrCodeUrl}
+                download={`QR-${intervention.numero}.png`}
+                className="btn btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', justifyContent: 'center' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="8" height="8" />
+                  <rect x="13" y="3" width="8" height="8" />
+                  <rect x="3" y="13" width="8" height="8" />
+                  <rect x="16" y="16" width="2" height="2" />
+                  <rect x="19" y="16" width="2" height="2" />
+                  <rect x="16" y="19" width="2" height="2" />
+                  <rect x="19" y="19" width="2" height="2" />
+                </svg>
+                QR Code
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Pieces Used */}
       {intervention.piecesUtilisees && intervention.piecesUtilisees.length > 0 && (
         <div className="card">

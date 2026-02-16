@@ -223,73 +223,148 @@ router.post('/:id/depot-atelier', async (req, res) => {
     });
     const qrCodeUrl = `/uploads/interventions/${intervention._id}/qrcode.png`;
 
-    // Générer la fiche DA (PDF)
+    // Générer la fiche DA (PDF) - Format professionnel simplifié
     const PDFDocument = require('pdfkit');
     const ficheDAPath = path.join(interventionsDir, 'fiche-da.pdf');
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+    });
     const stream = require('fs').createWriteStream(ficheDAPath);
 
     doc.pipe(stream);
 
-    // En-tête
-    doc.fontSize(20).fillColor('#2D5A3D').text('FICHE DE DÉPÔT ATELIER', { align: 'center' });
-    doc.moveDown();
+    // En-tête avec logo/nom entreprise
+    doc.fontSize(24).fillColor('#2D5A3D').font('Helvetica-Bold')
+       .text('EDS22', 50, 50);
+    doc.fontSize(10).fillColor('#666666').font('Helvetica')
+       .text('Électroménager - Dépannage - Service', 50, 80);
 
-    // Informations intervention
-    doc.fontSize(12).fillColor('#000000');
-    doc.text(`N° Intervention: ${intervention.numero}`, 50, 120);
-    doc.text(`Date de dépôt: ${new Date().toLocaleDateString('fr-FR')}`, 50, 140);
-    doc.moveDown();
+    // Ligne de séparation
+    doc.moveTo(50, 100).lineTo(545, 100).stroke('#2D5A3D');
 
-    // Client
-    doc.fontSize(14).fillColor('#2D5A3D').text('CLIENT', 50, 180);
-    doc.fontSize(10).fillColor('#000000');
-    doc.text(`Nom: ${intervention.clientId?.nom} ${intervention.clientId?.prenom}`, 50, 200);
-    doc.text(`Téléphone: ${intervention.clientId?.telephone}`, 50, 215);
-    if (intervention.clientId?.email) {
-      doc.text(`Email: ${intervention.clientId?.email}`, 50, 230);
-    }
-    doc.moveDown();
+    // Titre
+    doc.fontSize(18).fillColor('#000000').font('Helvetica-Bold')
+       .text('FICHE DE DÉPÔT ATELIER', 0, 120, { align: 'center' });
 
-    // Appareil
-    doc.fontSize(14).fillColor('#2D5A3D').text('APPAREIL', 50, 260);
-    doc.fontSize(10).fillColor('#000000');
-    doc.text(`Type: ${intervention.appareil?.type || 'Non spécifié'}`, 50, 280);
-    doc.text(`Marque: ${intervention.appareil?.marque || 'Non spécifiée'}`, 50, 295);
-    doc.text(`Modèle: ${intervention.appareil?.modele || 'Non spécifié'}`, 50, 310);
+    // Informations principales en deux colonnes
+    let yPos = 160;
+
+    // Colonne gauche - Informations intervention
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#2D5A3D')
+       .text('N° INTERVENTION', 50, yPos);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000')
+       .text(intervention.numero || 'N/A', 50, yPos + 15);
+
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#2D5A3D')
+       .text('DATE DE DÉPÔT', 50, yPos + 40);
+    doc.fontSize(11).font('Helvetica').fillColor('#000000')
+       .text(new Date().toLocaleDateString('fr-FR', {
+         day: '2-digit',
+         month: 'long',
+         year: 'numeric'
+       }), 50, yPos + 55);
+
+    // Colonne droite - Client
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#2D5A3D')
+       .text('CLIENT', 320, yPos);
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#000000')
+       .text(`${intervention.clientId?.nom || ''} ${intervention.clientId?.prenom || ''}`, 320, yPos + 15);
+    doc.fontSize(10).font('Helvetica').fillColor('#666666')
+       .text(intervention.clientId?.telephone || '', 320, yPos + 32);
+
+    yPos += 100;
+
+    // Cadre appareil
+    doc.roundedRect(50, yPos, 495, 120, 5).stroke('#CCCCCC');
+    yPos += 15;
+
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#2D5A3D')
+       .text('APPAREIL', 65, yPos);
+    yPos += 20;
+
+    const appareilInfo = [
+      { label: 'Type:', value: intervention.appareil?.type || 'Non spécifié' },
+      { label: 'Marque:', value: intervention.appareil?.marque || 'Non spécifiée' },
+      { label: 'Modèle:', value: intervention.appareil?.modele || 'Non spécifié' }
+    ];
+
     if (intervention.appareil?.numeroSerie) {
-      doc.text(`N° Série: ${intervention.appareil.numeroSerie}`, 50, 325);
+      appareilInfo.push({ label: 'N° Série:', value: intervention.appareil.numeroSerie });
     }
-    doc.moveDown();
 
-    // Problème
-    doc.fontSize(14).fillColor('#2D5A3D').text('PROBLÈME SIGNALÉ', 50, 355);
-    doc.fontSize(10).fillColor('#000000');
-    doc.text(intervention.description || 'Non spécifié', 50, 375, { width: 500 });
-    doc.moveDown();
+    appareilInfo.forEach((info, index) => {
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000')
+         .text(info.label, 65, yPos + (index * 20), { continued: true, width: 80 });
+      doc.font('Helvetica').fillColor('#333333')
+         .text(info.value, { width: 380 });
+    });
 
-    // Accessoires
-    doc.fontSize(14).fillColor('#2D5A3D').text('ACCESSOIRES REMIS', 50, 430);
-    doc.fontSize(10).fillColor('#000000');
+    yPos += appareilInfo.length * 20 + 25;
+
+    // Problème signalé
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#2D5A3D')
+       .text('PROBLÈME SIGNALÉ', 50, yPos);
+    yPos += 20;
+    doc.fontSize(10).font('Helvetica').fillColor('#000000')
+       .text(intervention.description || 'Non spécifié', 50, yPos, {
+         width: 495,
+         align: 'justify'
+       });
+
+    yPos += Math.max(60, doc.heightOfString(intervention.description || 'Non spécifié', { width: 495 }) + 20);
+
+    // Accessoires remis
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#2D5A3D')
+       .text('ACCESSOIRES REMIS', 50, yPos);
+    yPos += 20;
+
     if (accessoiresDepot && accessoiresDepot.length > 0) {
-      let yPos = 450;
-      accessoiresDepot.forEach(accessoire => {
-        doc.text(`• ${accessoire}`, 50, yPos);
-        yPos += 15;
+      accessoiresDepot.forEach((accessoire, index) => {
+        if (yPos > 700) {
+          doc.addPage();
+          yPos = 50;
+        }
+        doc.fontSize(10).font('Helvetica').fillColor('#000000')
+           .text(`□  ${accessoire}`, 65, yPos);
+        yPos += 18;
       });
     } else {
-      doc.text('Aucun accessoire remis', 50, 450);
+      doc.fontSize(10).font('Helvetica').fillColor('#666666')
+         .text('Aucun accessoire remis', 65, yPos);
+      yPos += 18;
     }
 
-    // QR Code
-    doc.fontSize(14).fillColor('#2D5A3D').text('QR CODE', 50, 580);
-    doc.fontSize(9).fillColor('#666666').text('Scannez pour accéder à l\'intervention', 50, 600);
-    doc.image(qrCodePath, 50, 615, { width: 100 });
+    yPos += 30;
 
-    // Signature
-    doc.fontSize(10).fillColor('#000000');
-    doc.text('Signature client:', 350, 650);
-    doc.text('_____________________', 350, 670);
+    // QR Code et Signature sur la même ligne
+    if (yPos > 650) {
+      doc.addPage();
+      yPos = 50;
+    }
+
+    // QR Code à gauche
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#2D5A3D')
+       .text('SUIVI EN LIGNE', 50, yPos);
+    doc.fontSize(8).font('Helvetica').fillColor('#666666')
+       .text('Scannez le QR code', 50, yPos + 15);
+    doc.image(qrCodePath, 50, yPos + 30, { width: 80, height: 80 });
+
+    // Signature à droite
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#2D5A3D')
+       .text('SIGNATURE CLIENT', 320, yPos);
+    doc.fontSize(8).font('Helvetica').fillColor('#666666')
+       .text('Je certifie avoir remis l\'appareil', 320, yPos + 15);
+    doc.fontSize(8)
+       .text('dans l\'état décrit ci-dessus', 320, yPos + 25);
+
+    // Cadre signature
+    doc.roundedRect(320, yPos + 45, 200, 60, 3).stroke('#CCCCCC');
+
+    // Pied de page
+    doc.fontSize(8).fillColor('#999999').font('Helvetica')
+       .text('Document généré automatiquement le ' + new Date().toLocaleString('fr-FR'),
+         0, 760, { align: 'center', width: 595 });
 
     doc.end();
 
