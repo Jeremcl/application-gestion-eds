@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon, MonitorSmartphone, FileStack, Truck, Menu } from 'lucide-react';
+import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon, MonitorSmartphone, FileStack, Truck, Menu, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { pieces, maintenance as maintenanceAPI, appareilsPret } from '../services/api';
@@ -88,6 +88,7 @@ const Layout = ({ children }) => {
     { path: '/', icon: Home, label: 'Dashboard' },
     { path: '/clients', icon: Users, label: 'Clients' },
     { path: '/interventions', icon: Wrench, label: 'Interventions' },
+    { path: '/calendrier', icon: Calendar, label: 'Calendrier' },
     { path: '/stock', icon: Package, label: 'Stock', badge: stockAlertes },
     { path: '/appareils-pret', icon: MonitorSmartphone, label: 'Appareils de prêt', badge: appareilsPretesCount },
     { path: '/facturation', icon: FileText, label: 'Facturation' },
@@ -316,20 +317,8 @@ const MaintenanceModal = ({ maintenanceStatus, onClose, onSave }) => {
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 2000,
-      padding: 'var(--space-4)'
-    }} onClick={onClose}>
-      <div style={{
+    <div className="modal-container" style={{ zIndex: 2000 }} onClick={onClose}>
+      <div className="modal-content" style={{
         background: 'white',
         borderRadius: 'var(--radius-xl)',
         padding: 'var(--space-6)',

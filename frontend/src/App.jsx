@@ -16,6 +16,7 @@ import AppareilPretDetail from './pages/AppareilPretDetail';
 import FichesInternes from './pages/FichesInternes';
 import Vehicules from './pages/Vehicules';
 import VehiculeDetail from './pages/VehiculeDetail';
+import Calendrier from './pages/Calendrier';
 import './styles/index.css';
 
 // Protected Route Component
@@ -90,6 +91,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Layout>
               <InterventionDetail />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/calendrier"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Calendrier />
             </Layout>
           </ProtectedRoute>
         }
