@@ -18,15 +18,22 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
+
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built files from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy index.html explicitly (belt and suspenders)
-COPY --from=builder /app/dist/index.html /usr/share/nginx/html/index.html
+# Verify index.html exists
+RUN test -f /usr/share/nginx/html/index.html || (echo "ERROR: index.html not found!" && exit 1)
+
+# Set proper permissions
+RUN chmod -R 755 /usr/share/nginx/html
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Test nginx config before starting
+CMD ["sh", "-c", "nginx -t && nginx -g 'daemon off;'"]
