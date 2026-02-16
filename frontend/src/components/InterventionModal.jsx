@@ -101,10 +101,23 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
     e.preventDefault();
     setLoading(true);
     try {
+      // Nettoyer les données avant envoi
+      const dataToSend = { ...formData };
+
+      // Si appareilId est vide, ne pas l'envoyer
+      if (!dataToSend.appareilId) {
+        delete dataToSend.appareilId;
+      }
+
+      // Si appareilPretId est vide, ne pas l'envoyer
+      if (!dataToSend.appareilPretId) {
+        delete dataToSend.appareilPretId;
+      }
+
       if (editingIntervention) {
-        await interventionsAPI.update(editingIntervention._id, formData);
+        await interventionsAPI.update(editingIntervention._id, dataToSend);
       } else {
-        await interventionsAPI.create(formData);
+        await interventionsAPI.create(dataToSend);
       }
       onSuccess?.();
       handleClose();

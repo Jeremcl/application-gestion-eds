@@ -57,27 +57,45 @@ router.get('/:id', async (req, res) => {
 // POST créer une nouvelle intervention
 router.post('/', async (req, res) => {
   try {
+    console.log('📝 Création intervention pour client:', req.body.clientId);
+
+    // Nettoyer les champs vides
+    if (req.body.appareilId === '' || req.body.appareilId === null) {
+      delete req.body.appareilId;
+    }
+    if (req.body.appareilPretId === '' || req.body.appareilPretId === null) {
+      delete req.body.appareilPretId;
+    }
+
     // Si appareilId est fourni, synchroniser les données de l'appareil
     if (req.body.appareilId && req.body.clientId) {
+      console.log('🔍 Récupération appareil ID:', req.body.appareilId);
       const client = await Client.findById(req.body.clientId);
       if (client) {
         const appareil = client.appareils.id(req.body.appareilId);
         if (appareil) {
+          console.log('✅ Appareil trouvé:', appareil.type, appareil.marque);
           req.body.appareil = {
             type: appareil.type,
             marque: appareil.marque,
             modele: appareil.modele,
             numeroSerie: appareil.numeroSerie
           };
+        } else {
+          console.log('⚠️  Appareil non trouvé avec ID:', req.body.appareilId);
         }
       }
+    } else if (req.body.appareil) {
+      console.log('📝 Appareil saisi manuellement:', req.body.appareil.type, req.body.appareil.marque);
     }
 
     const intervention = new Intervention(req.body);
     await intervention.save();
     await intervention.populate('clientId', 'nom prenom telephone');
+    console.log('✅ Intervention créée:', intervention.numero);
     res.status(201).json(intervention);
   } catch (error) {
+    console.error('❌ Erreur création intervention:', error);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 });
