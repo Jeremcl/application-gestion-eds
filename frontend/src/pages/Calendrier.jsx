@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, User, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, User, Plus, Edit2 } from 'lucide-react';
 import { interventions as interventionsAPI } from '../services/api';
 import InterventionModal from '../components/InterventionModal';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,8 @@ const Calendrier = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [showInterventionModal, setShowInterventionModal] = useState(false);
+  const [prefilledDate, setPrefilledDate] = useState(null);
+  const [hoveredDay, setHoveredDay] = useState(null);
 
   const monthNames = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -228,6 +230,7 @@ const Calendrier = () => {
             const dayInterventions = getInterventionsForDate(day.date);
             const isCurrentDay = isToday(day.date);
             const isPast = isPastDate(day.date);
+            const isHovered = hoveredDay === index;
 
             return (
               <div
@@ -237,33 +240,84 @@ const Calendrier = () => {
                   minHeight: '120px',
                   padding: 'var(--space-2)',
                   position: 'relative',
-                  cursor: dayInterventions.length > 0 ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   transition: 'all var(--transition-fast)',
-                  opacity: day.isCurrentMonth ? 1 : 0.5
+                  opacity: day.isCurrentMonth ? 1 : 0.5,
+                  border: isHovered && day.isCurrentMonth ? '2px solid var(--primary-300)' : '2px solid transparent'
                 }}
-                onClick={() => {
-                  if (dayInterventions.length > 0) {
-                    setSelectedDate(day.date);
+                onMouseEnter={() => setHoveredDay(index)}
+                onMouseLeave={() => setHoveredDay(null)}
+                onClick={(e) => {
+                  // Si on clique directement sur le jour (pas sur une intervention)
+                  if (e.target === e.currentTarget || e.target.closest('.day-header')) {
+                    if (dayInterventions.length > 0) {
+                      setSelectedDate(day.date);
+                    }
                   }
                 }}
               >
-                {/* Numéro du jour */}
+                {/* En-tête du jour avec numéro et bouton + */}
                 <div
+                  className="day-header"
                   style={{
-                    width: '32px',
-                    height: '32px',
                     display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 'var(--radius-full)',
-                    fontWeight: '600',
-                    fontSize: '0.875rem',
-                    marginBottom: 'var(--space-2)',
-                    background: isCurrentDay ? 'var(--primary-500)' : 'transparent',
-                    color: isCurrentDay ? 'white' : (isPast ? 'var(--neutral-400)' : 'var(--neutral-900)')
+                    marginBottom: 'var(--space-2)'
                   }}
                 >
-                  {day.date.getDate()}
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 'var(--radius-full)',
+                      fontWeight: '600',
+                      fontSize: '0.875rem',
+                      background: isCurrentDay ? 'var(--primary-500)' : 'transparent',
+                      color: isCurrentDay ? 'white' : (isPast ? 'var(--neutral-400)' : 'var(--neutral-900)')
+                    }}
+                  >
+                    {day.date.getDate()}
+                  </div>
+
+                  {/* Bouton + pour créer intervention (visible au hover) */}
+                  {day.isCurrentMonth && isHovered && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPrefilledDate(day.date);
+                        setShowInterventionModal(true);
+                      }}
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 'var(--radius-full)',
+                        background: 'var(--primary-500)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'white',
+                        transition: 'all var(--transition-fast)',
+                        opacity: 0.8
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '0.8';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                      title="Créer une intervention"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  )}
                 </div>
 
                 {/* Interventions */}
@@ -274,6 +328,14 @@ const Calendrier = () => {
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/interventions/${intervention._id}`);
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = `${getStatusColor(intervention.statut)}25`;
+                        e.currentTarget.style.transform = 'translateX(2px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = `${getStatusColor(intervention.statut)}15`;
+                        e.currentTarget.style.transform = 'translateX(0)';
                       }}
                       style={{
                         padding: 'var(--space-1) var(--space-2)',
@@ -287,11 +349,17 @@ const Calendrier = () => {
                         transition: 'all var(--transition-fast)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--space-1)'
                       }}
-                      title={`${intervention.clientId?.nom || 'Client'} - ${intervention.appareil?.type || 'Appareil'}`}
+                      title={`${intervention.clientId?.nom || 'Client'} - ${intervention.appareil?.type || 'Appareil'} - Cliquez pour voir les détails`}
                     >
-                      {intervention.clientId?.nom || 'Client'}
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {intervention.clientId?.nom || 'Client'}
+                      </span>
+                      <Edit2 size={10} style={{ flexShrink: 0, opacity: 0.6 }} />
                     </div>
                   ))}
                   {dayInterventions.length > 3 && (
@@ -464,11 +532,18 @@ const Calendrier = () => {
       {/* Modal création intervention */}
       <InterventionModal
         show={showInterventionModal}
-        onClose={() => setShowInterventionModal(false)}
+        onClose={() => {
+          setShowInterventionModal(false);
+          setPrefilledDate(null);
+        }}
         onSuccess={() => {
           loadInterventions();
           setShowInterventionModal(false);
+          setPrefilledDate(null);
         }}
+        prefilledData={prefilledDate ? {
+          datePrevue: prefilledDate.toISOString().split('T')[0]
+        } : {}}
       />
     </div>
   );

@@ -17,7 +17,7 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
     statut: 'Demande',
     typeIntervention: 'Atelier',
     technicien: '',
-    datePrevue: '',
+    datePrevue: prefilledData.datePrevue || '',
     dateRealisation: '',
     diagnostic: '',
     tempsMainOeuvre: 0,
@@ -56,11 +56,21 @@ const InterventionModal = ({ show, onClose, onSuccess, prefilledData = {}, editi
         if (clientId) {
           loadClientDevices(clientId);
         }
-      } else if (prefilledData.clientId) {
-        loadClientDevices(prefilledData.clientId);
+      } else if (prefilledData.clientId || prefilledData.datePrevue) {
+        // Réinitialiser le formData avec les données préfixées
+        setFormData(prev => ({
+          ...prev,
+          clientId: prefilledData.clientId || '',
+          appareilId: prefilledData.appareilId || '',
+          appareil: prefilledData.appareil || { type: '', marque: '', modele: '', numeroSerie: '' },
+          datePrevue: prefilledData.datePrevue || ''
+        }));
+        if (prefilledData.clientId) {
+          loadClientDevices(prefilledData.clientId);
+        }
       }
     }
-  }, [show, prefilledData.clientId, editingIntervention]);
+  }, [show, prefilledData.clientId, prefilledData.datePrevue, prefilledData.appareilId, editingIntervention]);
 
   useEffect(() => {
     if (formData.clientId && formData.clientId !== prefilledData.clientId) {
