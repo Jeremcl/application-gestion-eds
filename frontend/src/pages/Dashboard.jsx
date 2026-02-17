@@ -187,9 +187,9 @@ const Dashboard = () => {
     {
       icon: Euro,
       label: 'CA Mensuel',
-      value: `${stats.caMensuel.toFixed(0)}€`,
-      trend: '+15%',
-      positive: true
+      value: `${stats.caMensuel.toFixed(0)}€ / 2400€`,
+      trend: `${Math.round((stats.caMensuel / 2400) * 100)}%`,
+      positive: stats.caMensuel >= 2400
     },
     {
       icon: Package,
@@ -220,7 +220,7 @@ const Dashboard = () => {
       }}>
         {/* Header de bienvenue */}
         {messages.length === 0 && (
-          <div style={{
+          <div className="chatbot-welcome" style={{
             padding: 'var(--space-6) var(--space-4) var(--space-4)',
             textAlign: 'center',
             borderBottom: '1px solid var(--neutral-100)'
@@ -289,7 +289,7 @@ const Dashboard = () => {
                   <Sparkles size={16} />
                 </div>
               )}
-              <div style={{
+              <div className="chatbot-message-bubble" style={{
                 maxWidth: '70%',
                 padding: 'var(--space-3) var(--space-4)',
                 borderRadius: 'var(--radius-lg)',
@@ -343,7 +343,7 @@ const Dashboard = () => {
 
         {/* Barre de saisie */}
         <div style={{ padding: 'var(--space-4)' }}>
-          <div style={{
+          <div className="chatbot-input-container" style={{
             display: 'flex',
             gap: 'var(--space-3)',
             alignItems: 'center'
