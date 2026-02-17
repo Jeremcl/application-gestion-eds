@@ -423,6 +423,14 @@ export const vehicules = {
   }
 };
 
+// Statistiques
+export const statistiques = {
+  getDashboard: async (periode) => {
+    const response = await api.get('/api/statistiques/dashboard', { params: { periode } });
+    return response;
+  }
+};
+
 // Uploads
 export const uploads = {
   uploadPhoto: async (type, file) => {

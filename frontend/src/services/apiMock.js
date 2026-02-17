@@ -799,6 +799,120 @@ export const fichesInternes = {
   }
 };
 
+// Vehicules (stub pour mock)
+export const vehicules = {
+  getAll: async () => { await delay(); return { data: { vehicules: [], totalPages: 1, currentPage: 1, total: 0 } }; },
+  getStats: async () => { await delay(); return { data: { total: 0, enService: 0, enMaintenance: 0 } }; },
+  getAlertesDocuments: async () => { await delay(); return { data: [] }; },
+  getById: async () => { await delay(); return { data: null }; },
+  create: async (data) => { await delay(); return { data: { _id: Date.now().toString(), ...data } }; },
+  update: async (id, data) => { await delay(); return { data: { _id: id, ...data } }; },
+  delete: async () => { await delay(); return { data: { message: 'Véhicule supprimé' } }; },
+  addKilometrage: async () => { await delay(); return { data: { message: 'OK' } }; },
+  addCarburant: async () => { await delay(); return { data: { message: 'OK' } }; },
+  addDocument: async () => { await delay(); return { data: { message: 'OK' } }; }
+};
+
+// Uploads (stub pour mock)
+export const uploads = {
+  uploadPhoto: async () => { await delay(); return { data: { url: 'mock-photo-url.jpg' } }; },
+  deletePhoto: async () => { await delay(); return { data: { message: 'Photo supprimée' } }; }
+};
+
+// Statistiques
+export const statistiques = {
+  getDashboard: async (periode) => {
+    await delay(400);
+
+    const now = new Date();
+    const moisLabels = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      moisLabels.push(d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }));
+    }
+
+    // Générer des données réalistes pour un réparateur électroménager
+    const caValues = [1850, 2100, 2400, 1900, 2600, 2200, 2800, 2350, 2150, 2500, 1950, 2300];
+    const creeesValues = [12, 15, 18, 14, 20, 16, 22, 17, 15, 19, 13, 16];
+    const termineesValues = [10, 13, 16, 12, 18, 14, 19, 15, 14, 17, 11, 14];
+
+    return {
+      data: {
+        kpis: {
+          caPeriode: periode === 'annee' ? 27100 : periode === 'trimestre' ? 6750 : 2300,
+          enCours: 7,
+          panierMoyen: 138,
+          delaiMoyen: 4.2
+        },
+        revenusParMois: moisLabels.map((mois, i) => ({
+          mois,
+          ca: caValues[i],
+          count: Math.round(caValues[i] / 130)
+        })),
+        pipeline: [
+          { statut: 'Demande', count: 3 },
+          { statut: 'Planifié', count: 2 },
+          { statut: 'En cours', count: 4 },
+          { statut: 'Diagnostic', count: 2 },
+          { statut: 'Réparation', count: 1 },
+          { statut: 'Terminé', count: 8 },
+          { statut: 'Facturé', count: 15 }
+        ],
+        ventilationRevenus: [
+          { name: "Main d'oeuvre", value: 980 },
+          { name: 'Pièces', value: 720 },
+          { name: 'Forfait', value: 600 }
+        ],
+        repartitionType: [
+          { name: 'Atelier', value: 22 },
+          { name: 'Domicile', value: 13 }
+        ],
+        topAppareils: [
+          { name: 'Lave-linge', value: 12 },
+          { name: 'Lave-vaisselle', value: 8 },
+          { name: 'Réfrigérateur', value: 6 },
+          { name: 'Sèche-linge', value: 5 },
+          { name: 'Four', value: 4 }
+        ],
+        activiteParMois: moisLabels.map((mois, i) => ({
+          mois,
+          creees: creeesValues[i],
+          terminees: termineesValues[i]
+        })),
+        facturesImpayees: {
+          aging: [
+            { tranche: '0-30 jours', count: 3, montant: 420 },
+            { tranche: '30-60 jours', count: 1, montant: 200 },
+            { tranche: '60+ jours', count: 1, montant: 185 }
+          ],
+          total: 5,
+          montantTotal: 805
+        },
+        topClients: [
+          { nom: 'Dupont Marie', totalCA: 580, count: 4 },
+          { nom: 'Martin Jean', totalCA: 420, count: 3 },
+          { nom: 'Bernard Sophie', totalCA: 350, count: 3 },
+          { nom: 'Petit Alain', totalCA: 290, count: 2 },
+          { nom: 'Leroy Catherine', totalCA: 260, count: 2 }
+        ],
+        qualite: {
+          tauxRetour: 2.8,
+          topPieces: [
+            { nom: 'Pompe de vidange', reference: 'POM-002', quantite: 12 },
+            { nom: 'Filtre peluches', reference: 'FIL-001', quantite: 9 },
+            { nom: 'Résistance 2000W', reference: 'RES-003', quantite: 7 },
+            { nom: 'Courroie tambour', reference: 'COU-004', quantite: 6 },
+            { nom: 'Joint de hublot', reference: 'JOI-005', quantite: 5 }
+          ],
+          stockCritique: [
+            { reference: 'POM-002', designation: 'Pompe de vidange lave-vaisselle', stock: 3, minimum: 5 }
+          ]
+        }
+      }
+    };
+  }
+};
+
 export default {
   auth,
   clients,
@@ -809,5 +923,8 @@ export default {
   maintenance,
   appareilsPret,
   prets,
-  fichesInternes
+  fichesInternes,
+  vehicules,
+  uploads,
+  statistiques
 };

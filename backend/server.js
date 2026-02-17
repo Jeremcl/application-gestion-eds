@@ -35,6 +35,7 @@ app.use('/api/prets', require('./routes/prets'));
 app.use('/api/fiches-internes', require('./routes/fichesInternes'));
 app.use('/api/vehicules', require('./routes/vehicules'));
 app.use('/api/uploads', require('./routes/uploads'));
+app.use('/api/statistiques', require('./routes/statistiques'));
 
 // Servir les fichiers uploadés (photos)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
