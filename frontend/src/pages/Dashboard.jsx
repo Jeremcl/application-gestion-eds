@@ -187,9 +187,9 @@ const Dashboard = () => {
     {
       icon: Euro,
       label: 'CA Mensuel',
-      value: `${stats.caMensuel.toFixed(0)}€ / 2400€`,
-      trend: `${Math.round((stats.caMensuel / 2400) * 100)}%`,
-      positive: stats.caMensuel >= 2400
+      value: `${stats.caMensuel.toFixed(0)}€`,
+      trend: '',
+      positive: true
     },
     {
       icon: Package,

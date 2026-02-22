@@ -154,6 +154,9 @@ export const interventions = {
   completeDepotAtelier: async (id, data) => {
     const response = await api.post(`/api/interventions/${id}/depot-atelier`, data);
     return response;
+  },
+  getEmailDepotUrl: (id) => {
+    return `${API_URL}/api/interventions/${id}/email-depot`;
   }
 };
 
@@ -445,6 +448,30 @@ export const uploads = {
   },
   deletePhoto: async (type, filename) => {
     const response = await api.delete(`/api/uploads/${type}/${filename}`);
+    return response;
+  }
+};
+
+// Users
+export const users = {
+  getAll: async () => {
+    const response = await api.get('/api/users');
+    return response;
+  },
+  create: async (data) => {
+    const response = await api.post('/api/users', data);
+    return response;
+  },
+  updateMe: async (data) => {
+    const response = await api.put('/api/users/me', data);
+    return response;
+  },
+  changePassword: async (data) => {
+    const response = await api.put('/api/users/me/password', data);
+    return response;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/api/users/${id}`);
     return response;
   }
 };

@@ -274,6 +274,9 @@ export const interventions = {
   getStats: async () => {
     await delay();
     return { data: mockStats };
+  },
+  getEmailDepotUrl: (id) => {
+    return `http://localhost:5001/api/interventions/${id}/email-depot`;
   }
 };
 
@@ -811,6 +814,47 @@ export const vehicules = {
   addKilometrage: async () => { await delay(); return { data: { message: 'OK' } }; },
   addCarburant: async () => { await delay(); return { data: { message: 'OK' } }; },
   addDocument: async () => { await delay(); return { data: { message: 'OK' } }; }
+};
+
+// Users (mock)
+let mockUsers = [
+  { _id: '1', nom: 'Administrateur EDS22', email: 'admin@eds22.com', role: 'admin', createdAt: new Date('2024-01-01') },
+  { _id: '2', nom: 'Jérémy', email: 'jeremy@eds22.com', role: 'tech', createdAt: new Date('2024-01-15') },
+  { _id: '3', nom: 'Stéphane', email: 'stephane@eds22.com', role: 'tech', createdAt: new Date('2024-01-15') },
+  { _id: '4', nom: 'Anne Laure', email: 'annelaure@eds22.com', role: 'tech', createdAt: new Date('2024-02-01') },
+];
+
+export const users = {
+  getAll: async () => {
+    await delay();
+    return { data: { users: [...mockUsers] } };
+  },
+  create: async (data) => {
+    await delay();
+    const existing = mockUsers.find(u => u.email === data.email);
+    if (existing) throw { response: { data: { message: 'Un utilisateur avec cet email existe déjà' } } };
+    const newUser = { _id: Date.now().toString(), ...data, role: data.role || 'tech', createdAt: new Date() };
+    mockUsers.push(newUser);
+    return { data: { user: newUser } };
+  },
+  updateMe: async (data) => {
+    await delay();
+    const stored = JSON.parse(localStorage.getItem('user') || '{}');
+    const updated = { ...stored, ...data };
+    localStorage.setItem('user', JSON.stringify(updated));
+    return { data: { user: updated } };
+  },
+  changePassword: async (data) => {
+    await delay();
+    return { data: { message: 'Mot de passe modifié avec succès' } };
+  },
+  delete: async (id) => {
+    await delay();
+    const index = mockUsers.findIndex(u => u._id === id);
+    if (index === -1) throw new Error('Utilisateur non trouvé');
+    mockUsers.splice(index, 1);
+    return { data: { message: 'Utilisateur supprimé avec succès' } };
+  }
 };
 
 // Uploads (stub pour mock)

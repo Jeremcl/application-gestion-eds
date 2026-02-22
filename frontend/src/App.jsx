@@ -18,6 +18,7 @@ import Vehicules from './pages/Vehicules';
 import VehiculeDetail from './pages/VehiculeDetail';
 import Calendrier from './pages/Calendrier';
 import Statistiques from './pages/Statistiques';
+import Parametres from './pages/Parametres';
 import './styles/index.css';
 
 // Protected Route Component
@@ -201,12 +202,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Layout>
-              <div className="card" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-                <h2>Paramètres</h2>
-                <p style={{ color: 'var(--neutral-600)', marginTop: 'var(--space-4)' }}>
-                  Page de paramètres en construction
-                </p>
-              </div>
+              <Parametres />
             </Layout>
           </ProtectedRoute>
         }
