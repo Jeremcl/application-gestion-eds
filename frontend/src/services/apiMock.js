@@ -812,7 +812,11 @@ export const vehicules = {
   update: async (id, data) => { await delay(); return { data: { _id: id, ...data } }; },
   delete: async () => { await delay(); return { data: { message: 'Véhicule supprimé' } }; },
   addKilometrage: async () => { await delay(); return { data: { message: 'OK' } }; },
+  updateKilometrage: async () => { await delay(); return { data: { message: 'OK' } }; },
+  deleteKilometrage: async () => { await delay(); return { data: { message: 'OK' } }; },
   addCarburant: async () => { await delay(); return { data: { message: 'OK' } }; },
+  updateCarburant: async () => { await delay(); return { data: { message: 'OK' } }; },
+  deleteCarburant: async () => { await delay(); return { data: { message: 'OK' } }; },
   addDocument: async () => { await delay(); return { data: { message: 'OK' } }; }
 };
 

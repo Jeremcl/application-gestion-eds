@@ -198,6 +198,45 @@ router.post('/:id/kilometrage', async (req, res) => {
   }
 });
 
+// PUT modifier un relevé kilométrique
+router.put('/:id/kilometrage/:entryId', async (req, res) => {
+  try {
+    const vehicule = await Vehicule.findById(req.params.id);
+    if (!vehicule) return res.status(404).json({ message: 'Véhicule non trouvé' });
+
+    const entry = vehicule.historiqueKilometrage.id(req.params.entryId);
+    if (!entry) return res.status(404).json({ message: 'Relevé non trouvé' });
+
+    const { date, valeur, photoUrl, notes } = req.body;
+    if (date) entry.date = date;
+    if (valeur !== undefined) entry.valeur = valeur;
+    if (photoUrl !== undefined) entry.photoUrl = photoUrl;
+    if (notes !== undefined) entry.notes = notes;
+
+    await vehicule.save();
+    res.json(vehicule);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
+// DELETE supprimer un relevé kilométrique
+router.delete('/:id/kilometrage/:entryId', async (req, res) => {
+  try {
+    const vehicule = await Vehicule.findById(req.params.id);
+    if (!vehicule) return res.status(404).json({ message: 'Véhicule non trouvé' });
+
+    vehicule.historiqueKilometrage = vehicule.historiqueKilometrage.filter(
+      e => e._id.toString() !== req.params.entryId
+    );
+
+    await vehicule.save();
+    res.json(vehicule);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
 // POST ajouter un plein de carburant
 router.post('/:id/carburant', async (req, res) => {
   try {
@@ -222,6 +261,53 @@ router.post('/:id/carburant', async (req, res) => {
       ticketUrl,
       notes
     });
+
+    await vehicule.save();
+    res.json(vehicule);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
+// PUT modifier un plein de carburant
+router.put('/:id/carburant/:entryId', async (req, res) => {
+  try {
+    const vehicule = await Vehicule.findById(req.params.id);
+    if (!vehicule) return res.status(404).json({ message: 'Véhicule non trouvé' });
+
+    const entry = vehicule.historiqueCarburant.id(req.params.entryId);
+    if (!entry) return res.status(404).json({ message: 'Plein non trouvé' });
+
+    const { date, litres, montant, prixLitre, ticketUrl, notes } = req.body;
+    if (date) entry.date = date;
+    if (litres !== undefined) entry.litres = litres;
+    if (montant !== undefined) entry.montant = montant;
+    if (notes !== undefined) entry.notes = notes;
+    if (ticketUrl !== undefined) entry.ticketUrl = ticketUrl;
+
+    // Recalculer prix au litre si non fourni
+    if (prixLitre !== undefined) {
+      entry.prixLitre = prixLitre;
+    } else if (entry.litres && entry.montant) {
+      entry.prixLitre = Math.round((entry.montant / entry.litres) * 1000) / 1000;
+    }
+
+    await vehicule.save();
+    res.json(vehicule);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
+// DELETE supprimer un plein de carburant
+router.delete('/:id/carburant/:entryId', async (req, res) => {
+  try {
+    const vehicule = await Vehicule.findById(req.params.id);
+    if (!vehicule) return res.status(404).json({ message: 'Véhicule non trouvé' });
+
+    vehicule.historiqueCarburant = vehicule.historiqueCarburant.filter(
+      e => e._id.toString() !== req.params.entryId
+    );
 
     await vehicule.save();
     res.json(vehicule);

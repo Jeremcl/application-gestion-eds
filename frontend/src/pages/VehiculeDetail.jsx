@@ -15,6 +15,8 @@ const VehiculeDetail = () => {
   const [showKilometrageModal, setShowKilometrageModal] = useState(false);
   const [showCarburantModal, setShowCarburantModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [editingKilometrage, setEditingKilometrage] = useState(null);
+  const [editingCarburant, setEditingCarburant] = useState(null);
 
   useEffect(() => {
     loadVehiculeData();
@@ -212,13 +214,19 @@ const VehiculeDetail = () => {
         {activeTab === 'kilometrage' && (
           <KilometrageTab
             historique={vehicule.historiqueKilometrage || []}
-            onAdd={() => setShowKilometrageModal(true)}
+            vehiculeId={vehiculeId}
+            onAdd={() => { setEditingKilometrage(null); setShowKilometrageModal(true); }}
+            onEdit={(entry) => { setEditingKilometrage(entry); setShowKilometrageModal(true); }}
+            onDelete={loadVehiculeData}
           />
         )}
         {activeTab === 'carburant' && (
           <CarburantTab
             historique={vehicule.historiqueCarburant || []}
-            onAdd={() => setShowCarburantModal(true)}
+            vehiculeId={vehiculeId}
+            onAdd={() => { setEditingCarburant(null); setShowCarburantModal(true); }}
+            onEdit={(entry) => { setEditingCarburant(entry); setShowCarburantModal(true); }}
+            onDelete={loadVehiculeData}
           />
         )}
         {activeTab === 'documents' && (
@@ -239,16 +247,18 @@ const VehiculeDetail = () => {
 
       <KilometrageModal
         show={showKilometrageModal}
-        onClose={() => setShowKilometrageModal(false)}
+        onClose={() => { setShowKilometrageModal(false); setEditingKilometrage(null); }}
         onSuccess={loadVehiculeData}
         vehiculeId={vehiculeId}
+        editingEntry={editingKilometrage}
       />
 
       <CarburantModal
         show={showCarburantModal}
-        onClose={() => setShowCarburantModal(false)}
+        onClose={() => { setShowCarburantModal(false); setEditingCarburant(null); }}
         onSuccess={loadVehiculeData}
         vehiculeId={vehiculeId}
+        editingEntry={editingCarburant}
       />
 
       <DocumentModal
@@ -271,9 +281,19 @@ const getPhotoUrl = (photoUrl) => {
 
 // Sub-components for tabs
 
-const KilometrageTab = ({ historique, onAdd }) => {
+const KilometrageTab = ({ historique, vehiculeId, onAdd, onEdit, onDelete }) => {
   const sorted = [...historique].sort((a, b) => new Date(b.date) - new Date(a.date));
   const [previewPhoto, setPreviewPhoto] = useState(null);
+
+  const handleDelete = async (entryId) => {
+    if (!window.confirm('Supprimer ce relevé kilométrique ?')) return;
+    try {
+      await vehiculesAPI.deleteKilometrage(vehiculeId, entryId);
+      onDelete?.();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Erreur lors de la suppression');
+    }
+  };
 
   return (
     <div>
@@ -297,6 +317,7 @@ const KilometrageTab = ({ historique, onAdd }) => {
                 <th>Kilometrage</th>
                 <th>Photo</th>
                 <th>Notes</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -316,6 +337,25 @@ const KilometrageTab = ({ historique, onAdd }) => {
                     ) : '-'}
                   </td>
                   <td>{item.notes || '-'}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                      <button
+                        className="btn-icon"
+                        onClick={() => onEdit(item)}
+                        title="Modifier"
+                      >
+                        <Edit size={15} />
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={() => handleDelete(item._id)}
+                        title="Supprimer"
+                        style={{ color: 'var(--red-500)' }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -357,13 +397,23 @@ const KilometrageTab = ({ historique, onAdd }) => {
   );
 };
 
-const CarburantTab = ({ historique, onAdd }) => {
+const CarburantTab = ({ historique, vehiculeId, onAdd, onEdit, onDelete }) => {
   const sorted = [...historique].sort((a, b) => new Date(b.date) - new Date(a.date));
   const [previewPhoto, setPreviewPhoto] = useState(null);
 
   const totalMois = sorted
     .filter(c => new Date(c.date) >= new Date(new Date().setDate(1)))
     .reduce((sum, c) => sum + (c.montant || 0), 0);
+
+  const handleDelete = async (entryId) => {
+    if (!window.confirm('Supprimer ce plein de carburant ?')) return;
+    try {
+      await vehiculesAPI.deleteCarburant(vehiculeId, entryId);
+      onDelete?.();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Erreur lors de la suppression');
+    }
+  };
 
   return (
     <div>
@@ -394,6 +444,7 @@ const CarburantTab = ({ historique, onAdd }) => {
                 <th>Prix/L</th>
                 <th>Ticket</th>
                 <th>Notes</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -415,6 +466,25 @@ const CarburantTab = ({ historique, onAdd }) => {
                     ) : '-'}
                   </td>
                   <td>{item.notes || '-'}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                      <button
+                        className="btn-icon"
+                        onClick={() => onEdit(item)}
+                        title="Modifier"
+                      >
+                        <Edit size={15} />
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={() => handleDelete(item._id)}
+                        title="Supprimer"
+                        style={{ color: 'var(--red-500)' }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -516,7 +586,8 @@ const DocumentsTab = ({ documents, onAdd }) => {
 
 // Modals for adding entries
 
-const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
+const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId, editingEntry }) => {
+  const isEditing = !!editingEntry;
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -527,6 +598,21 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
     photoUrl: '',
     notes: ''
   });
+
+  useEffect(() => {
+    if (editingEntry) {
+      setFormData({
+        date: editingEntry.date ? new Date(editingEntry.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        valeur: editingEntry.valeur || '',
+        photoUrl: editingEntry.photoUrl || '',
+        notes: editingEntry.notes || ''
+      });
+      setPhotoPreview(editingEntry.photoUrl ? getPhotoUrl(editingEntry.photoUrl) : null);
+    } else {
+      setFormData({ date: new Date().toISOString().split('T')[0], valeur: '', photoUrl: '', notes: '' });
+      setPhotoPreview(null);
+    }
+  }, [editingEntry, show]);
 
   const handlePhotoCapture = async (e) => {
     const file = e.target.files?.[0];
@@ -561,11 +647,15 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await vehiculesAPI.addKilometrage(vehiculeId, formData);
+      if (isEditing) {
+        await vehiculesAPI.updateKilometrage(vehiculeId, editingEntry._id, formData);
+      } else {
+        await vehiculesAPI.addKilometrage(vehiculeId, formData);
+      }
       onSuccess?.();
       handleClose();
     } catch (error) {
-      console.error('Erreur ajout kilometrage:', error);
+      console.error('Erreur kilometrage:', error);
       alert(error.response?.data?.message || 'Erreur');
     } finally {
       setLoading(false);
@@ -589,7 +679,7 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
     }}>
       <div className="card animate-slide-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-          <h2>Ajouter un releve kilometrique</h2>
+          <h2>{isEditing ? 'Modifier le releve kilometrique' : 'Ajouter un releve kilometrique'}</h2>
           <button onClick={handleClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 'var(--space-2)', color: 'var(--neutral-600)' }}>
             <X size={24} />
           </button>
@@ -662,7 +752,7 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
             <button type="button" className="btn btn-secondary" onClick={handleClose} disabled={loading || uploading}>Annuler</button>
-            <button type="submit" className="btn btn-primary" disabled={loading || uploading}>{loading ? 'Ajout...' : 'Ajouter'}</button>
+            <button type="submit" className="btn btn-primary" disabled={loading || uploading}>{loading ? (isEditing ? 'Modification...' : 'Ajout...') : (isEditing ? 'Modifier' : 'Ajouter')}</button>
           </div>
         </form>
       </div>
@@ -670,7 +760,8 @@ const KilometrageModal = ({ show, onClose, onSuccess, vehiculeId }) => {
   );
 };
 
-const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
+const CarburantModal = ({ show, onClose, onSuccess, vehiculeId, editingEntry }) => {
+  const isEditing = !!editingEntry;
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -682,6 +773,22 @@ const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
     ticketUrl: '',
     notes: ''
   });
+
+  useEffect(() => {
+    if (editingEntry) {
+      setFormData({
+        date: editingEntry.date ? new Date(editingEntry.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        litres: editingEntry.litres || '',
+        montant: editingEntry.montant || '',
+        ticketUrl: editingEntry.ticketUrl || '',
+        notes: editingEntry.notes || ''
+      });
+      setPhotoPreview(editingEntry.ticketUrl ? getPhotoUrl(editingEntry.ticketUrl) : null);
+    } else {
+      setFormData({ date: new Date().toISOString().split('T')[0], litres: '', montant: '', ticketUrl: '', notes: '' });
+      setPhotoPreview(null);
+    }
+  }, [editingEntry, show]);
 
   const handlePhotoCapture = async (e) => {
     const file = e.target.files?.[0];
@@ -714,11 +821,15 @@ const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await vehiculesAPI.addCarburant(vehiculeId, formData);
+      if (isEditing) {
+        await vehiculesAPI.updateCarburant(vehiculeId, editingEntry._id, formData);
+      } else {
+        await vehiculesAPI.addCarburant(vehiculeId, formData);
+      }
       onSuccess?.();
       handleClose();
     } catch (error) {
-      console.error('Erreur ajout carburant:', error);
+      console.error('Erreur carburant:', error);
       alert(error.response?.data?.message || 'Erreur');
     } finally {
       setLoading(false);
@@ -742,7 +853,7 @@ const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
     }}>
       <div className="card animate-slide-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-          <h2>Ajouter un plein</h2>
+          <h2>{isEditing ? 'Modifier le plein' : 'Ajouter un plein'}</h2>
           <button onClick={handleClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 'var(--space-2)', color: 'var(--neutral-600)' }}>
             <X size={24} />
           </button>
@@ -821,7 +932,7 @@ const CarburantModal = ({ show, onClose, onSuccess, vehiculeId }) => {
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-6)' }}>
             <button type="button" className="btn btn-secondary" onClick={handleClose} disabled={loading || uploading}>Annuler</button>
-            <button type="submit" className="btn btn-primary" disabled={loading || uploading}>{loading ? 'Ajout...' : 'Ajouter'}</button>
+            <button type="submit" className="btn btn-primary" disabled={loading || uploading}>{loading ? (isEditing ? 'Modification...' : 'Ajout...') : (isEditing ? 'Modifier' : 'Ajouter')}</button>
           </div>
         </form>
       </div>

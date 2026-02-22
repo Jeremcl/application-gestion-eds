@@ -416,8 +416,24 @@ export const vehicules = {
     const response = await api.post(`/api/vehicules/${id}/kilometrage`, data);
     return response;
   },
+  updateKilometrage: async (id, entryId, data) => {
+    const response = await api.put(`/api/vehicules/${id}/kilometrage/${entryId}`, data);
+    return response;
+  },
+  deleteKilometrage: async (id, entryId) => {
+    const response = await api.delete(`/api/vehicules/${id}/kilometrage/${entryId}`);
+    return response;
+  },
   addCarburant: async (id, data) => {
     const response = await api.post(`/api/vehicules/${id}/carburant`, data);
+    return response;
+  },
+  updateCarburant: async (id, entryId, data) => {
+    const response = await api.put(`/api/vehicules/${id}/carburant/${entryId}`, data);
+    return response;
+  },
+  deleteCarburant: async (id, entryId) => {
+    const response = await api.delete(`/api/vehicules/${id}/carburant/${entryId}`);
     return response;
   },
   addDocument: async (id, data) => {
