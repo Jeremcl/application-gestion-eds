@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, ShoppingBag, Eye, EyeOff, Edit, AlertTriangle, Globe, GlobeOff, Filter, Package } from 'lucide-react';
+import { Plus, Search, ShoppingBag, Eye, EyeOff, Edit, AlertTriangle, Globe, Filter, Package } from 'lucide-react';
 import { produits as produitsAPI } from '../services/api';
 import ProduitModal from '../components/ProduitModal';
 import ResponsiveTable from '../components/ResponsiveTable';
@@ -222,7 +222,7 @@ const Boutique = () => {
         >
           {produit.disponibleSurSite
             ? <><Globe size={13} /> Publié</>
-            : <><GlobeOff size={13} /> Masqué</>
+            : <><EyeOff size={13} /> Masqué</>
           }
         </button>
       )

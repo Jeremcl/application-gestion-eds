@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Globe, GlobeOff, AlertTriangle, Package, Tag, Euro, Layers, Image } from 'lucide-react';
+import { ArrowLeft, Edit, Globe, EyeOff, AlertTriangle, Package, Tag, DollarSign, Layers, Image } from 'lucide-react';
 import { produits as produitsAPI } from '../services/api';
 import ProduitModal from '../components/ProduitModal';
 
@@ -147,7 +147,7 @@ const ProduitDetail = () => {
               borderColor: produit.disponibleSurSite ? 'var(--primary-200)' : undefined
             }}
           >
-            {produit.disponibleSurSite ? <Globe size={16} /> : <GlobeOff size={16} />}
+            {produit.disponibleSurSite ? <Globe size={16} /> : <EyeOff size={16} />}
             {produit.disponibleSurSite ? 'Publié sur le site' : 'Masqué du site'}
           </button>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
@@ -218,7 +218,7 @@ const ProduitDetail = () => {
           <div className="card">
             <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 'var(--space-4)', color: 'var(--neutral-700)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <Euro size={16} />
+                <DollarSign size={16} />
                 Tarification
               </div>
             </h3>
