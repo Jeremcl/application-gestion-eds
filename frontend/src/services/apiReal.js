@@ -492,4 +492,36 @@ export const users = {
   }
 };
 
+// Produits boutique
+export const produits = {
+  getAll: async (params) => {
+    const response = await api.get('/api/produits', { params });
+    return response;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/api/produits/${id}`);
+    return response;
+  },
+  create: async (data) => {
+    const response = await api.post('/api/produits', data);
+    return response;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/api/produits/${id}`, data);
+    return response;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/api/produits/${id}`);
+    return response;
+  },
+  toggleVisibilite: async (id) => {
+    const response = await api.patch(`/api/produits/${id}/visibilite`);
+    return response;
+  },
+  getAlertesStock: async () => {
+    const response = await api.get('/api/produits/alertes-stock');
+    return response;
+  }
+};
+
 export default api;

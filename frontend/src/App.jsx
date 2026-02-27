@@ -19,6 +19,8 @@ import VehiculeDetail from './pages/VehiculeDetail';
 import Calendrier from './pages/Calendrier';
 import Statistiques from './pages/Statistiques';
 import Parametres from './pages/Parametres';
+import Boutique from './pages/Boutique';
+import ProduitDetail from './pages/ProduitDetail';
 import './styles/index.css';
 
 // Protected Route Component
@@ -203,6 +205,26 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Layout>
               <Parametres />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/boutique"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Boutique />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/boutique/:produitId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ProduitDetail />
             </Layout>
           </ProtectedRoute>
         }

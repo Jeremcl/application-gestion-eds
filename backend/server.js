@@ -37,6 +37,11 @@ app.use('/api/vehicules', require('./routes/vehicules'));
 app.use('/api/uploads', require('./routes/uploads'));
 app.use('/api/statistiques', require('./routes/statistiques'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/produits', require('./routes/produits'));
+
+// API publique v1 — accessible depuis le site web (CORS ouvert)
+app.use('/api/v1', cors());
+app.use('/api/v1/products', require('./routes/publicProducts'));
 
 // Servir les fichiers uploadés (photos)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

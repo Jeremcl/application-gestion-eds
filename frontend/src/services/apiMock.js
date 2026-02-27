@@ -961,6 +961,51 @@ export const statistiques = {
   }
 };
 
+// Produits boutique (mock minimal)
+const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
+const mockProduits = [];
+
+export const produits = {
+  getAll: async (params) => {
+    await delay();
+    return { data: { produits: mockProduits, totalPages: 1, currentPage: 1, total: mockProduits.length } };
+  },
+  getById: async (id) => {
+    await delay();
+    const produit = mockProduits.find(p => p._id === id);
+    return { data: produit || null };
+  },
+  create: async (data) => {
+    await delay();
+    const newProduit = { _id: Date.now().toString(), actif: true, dateCreation: new Date().toISOString(), dateModification: new Date().toISOString(), ...data };
+    mockProduits.push(newProduit);
+    return { data: newProduit };
+  },
+  update: async (id, data) => {
+    await delay();
+    const index = mockProduits.findIndex(p => p._id === id);
+    if (index !== -1) {
+      mockProduits[index] = { ...mockProduits[index], ...data, dateModification: new Date().toISOString() };
+      return { data: mockProduits[index] };
+    }
+    throw new Error('Produit non trouvé');
+  },
+  delete: async (id) => {
+    await delay();
+    return { data: { message: 'Produit supprimé' } };
+  },
+  toggleVisibilite: async (id) => {
+    await delay();
+    const produit = mockProduits.find(p => p._id === id);
+    if (produit) produit.disponibleSurSite = !produit.disponibleSurSite;
+    return { data: { disponibleSurSite: produit?.disponibleSurSite || false } };
+  },
+  getAlertesStock: async () => {
+    await delay();
+    return { data: { count: 0, produits: [] } };
+  }
+};
+
 export default {
   auth,
   clients,
@@ -974,5 +1019,6 @@ export default {
   fichesInternes,
   vehicules,
   uploads,
-  statistiques
+  statistiques,
+  produits
 };
