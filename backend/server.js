@@ -40,8 +40,9 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/produits', require('./routes/produits'));
 
 // API publique v1 — accessible depuis le site web (CORS ouvert)
+// Monte le router sur /api/v1 (les routes internes sont /products et /categories)
 app.use('/api/v1', cors());
-app.use('/api/v1/products', require('./routes/publicProducts'));
+app.use('/api/v1', require('./routes/publicProducts'));
 
 // Servir les fichiers uploadés (photos)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

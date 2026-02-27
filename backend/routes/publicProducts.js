@@ -1,23 +1,74 @@
 /**
- * API REST publique v1 — Produits EDS22
- * Préfixe : /api/v1/products
- * Auth    : Authorization: Bearer <API_SECRET_KEY>
- * Usage   : Site web EDS22 pour afficher la boutique
+ * API REST publique v1 — EDS22
+ * Monté sur : /api/v1
+ * Auth      : Authorization: Bearer <API_SECRET_KEY>
+ * Usage     : Site web EDS22
+ *
+ * Endpoints :
+ *   GET  /api/v1/categories          → liste des catégories
+ *   GET  /api/v1/products            → produits publiés (paginés, filtrables)
+ *   GET  /api/v1/products/:id        → détail d'un produit
+ *   POST /api/v1/products            → créer un produit
+ *   PATCH /api/v1/products/:id       → modifier un produit
+ *   DELETE /api/v1/products/:id      → soft delete
  */
 const express = require('express');
 const router = express.Router();
 const Produit = require('../models/Produit');
 const apiKeyAuth = require('../middleware/apiKeyAuth');
 
-// Tous les endpoints de cette route nécessitent la clé API
+// ─── Source de vérité unique pour les catégories EDS22 ───────────────────────
+const CATEGORIES = [
+  {
+    slug: 'lavage',
+    label: 'Lavage',
+    description: 'Machines à laver, sèche-linge, lave-vaisselle'
+  },
+  {
+    slug: 'cuisson',
+    label: 'Cuisson',
+    description: 'Fours, plaques de cuisson, hottes'
+  },
+  {
+    slug: 'multimedia',
+    label: 'Multimédia',
+    description: 'TV, audio-visuel, informatique, smartphones'
+  },
+  {
+    slug: 'appareils-reconditiones',
+    label: 'Appareils Reconditionnés',
+    description: 'Appareils remis en état par EDS22'
+  },
+  {
+    slug: 'pieces-detachees',
+    label: 'Pièces Détachées',
+    description: 'Pièces de remplacement pour électroménager'
+  }
+];
+
+const CATEGORY_LABELS = CATEGORIES.map(c => c.label);
+
+// Tous les endpoints nécessitent la clé API
 router.use(apiKeyAuth);
 
+// ─── GET /api/v1/categories ───────────────────────────────────────────────────
 /**
- * GET /api/v1/products
- * Retourne uniquement les produits disponibles sur le site (disponibleSurSite = true)
- * Supporte : pagination, filtres categorie et etat
+ * Retourne la liste complète des catégories avec slug, label et description.
+ * Utilisé par le site web pour construire ses menus dynamiquement.
  */
-router.get('/', async (req, res) => {
+router.get('/categories', (req, res) => {
+  res.json({
+    success: true,
+    data: CATEGORIES
+  });
+});
+
+// ─── GET /api/v1/products ─────────────────────────────────────────────────────
+/**
+ * Retourne uniquement les produits disponibles sur le site (disponibleSurSite = true).
+ * Paramètres query : page, limit, categorie (label exact), etat
+ */
+router.get('/products', async (req, res) => {
   try {
     const {
       page = 1,
@@ -29,16 +80,15 @@ router.get('/', async (req, res) => {
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
 
-    let query = {
-      actif: true,
-      disponibleSurSite: true
-    };
+    const query = { actif: true, disponibleSurSite: true };
 
-    if (categorie) query.categorie = categorie;
+    if (categorie && CATEGORY_LABELS.includes(categorie)) {
+      query.categorie = categorie;
+    }
     if (etat) query.etat = etat;
 
     const produits = await Produit.find(query)
-      .select('-prixAchat') // Ne pas exposer le prix d'achat publiquement
+      .select('-prixAchat') // prix d'achat non exposé publiquement
       .sort({ dateCreation: -1 })
       .limit(limitNum)
       .skip((pageNum - 1) * limitNum);
@@ -55,7 +105,7 @@ router.get('/', async (req, res) => {
         limit: limitNum
       },
       filters: {
-        categories: ['Téléphones', 'Tablettes', 'Ordinateurs', 'Électroménager', 'TV/Écrans', 'Consoles', 'Accessoires', 'Autre'],
+        categories: CATEGORY_LABELS,
         etats: ['neuf', 'reconditionné', 'piece_detachee']
       }
     });
@@ -64,11 +114,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * GET /api/v1/products/:id
- * Détail d'un produit (uniquement s'il est disponible sur le site)
- */
-router.get('/:id', async (req, res) => {
+// ─── GET /api/v1/products/:id ─────────────────────────────────────────────────
+router.get('/products/:id', async (req, res) => {
   try {
     const produit = await Produit.findOne({
       _id: req.params.id,
@@ -86,11 +133,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-/**
- * POST /api/v1/products
- * Créer un produit (usage interne/admin via API externe)
- */
-router.post('/', async (req, res) => {
+// ─── POST /api/v1/products ────────────────────────────────────────────────────
+router.post('/products', async (req, res) => {
   try {
     const produit = new Produit(req.body);
     await produit.save();
@@ -103,11 +147,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * PATCH /api/v1/products/:id
- * Modifier un produit
- */
-router.patch('/:id', async (req, res) => {
+// ─── PATCH /api/v1/products/:id ───────────────────────────────────────────────
+router.patch('/products/:id', async (req, res) => {
   try {
     const produit = await Produit.findByIdAndUpdate(
       req.params.id,
@@ -126,11 +167,8 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/v1/products/:id
- * Supprimer un produit (soft delete — le retire du site et désactive)
- */
-router.delete('/:id', async (req, res) => {
+// ─── DELETE /api/v1/products/:id ──────────────────────────────────────────────
+router.delete('/products/:id', async (req, res) => {
   try {
     const produit = await Produit.findByIdAndUpdate(
       req.params.id,

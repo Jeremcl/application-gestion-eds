@@ -5,7 +5,7 @@ import { produits as produitsAPI } from '../services/api';
 import ProduitModal from '../components/ProduitModal';
 import ResponsiveTable from '../components/ResponsiveTable';
 
-const CATEGORIES = ['Téléphones', 'Tablettes', 'Ordinateurs', 'Électroménager', 'TV/Écrans', 'Consoles', 'Accessoires', 'Autre'];
+const CATEGORIES = ['Lavage', 'Cuisson', 'Multimédia', 'Appareils Reconditionnés', 'Pièces Détachées'];
 const ETATS_LABELS = {
   neuf: 'Neuf',
   reconditionné: 'Reconditionné',

@@ -12,8 +12,8 @@ const produitSchema = new mongoose.Schema({
   },
   categorie: {
     type: String,
-    enum: ['Téléphones', 'Tablettes', 'Ordinateurs', 'Électroménager', 'TV/Écrans', 'Consoles', 'Accessoires', 'Autre'],
-    default: 'Autre'
+    enum: ['Lavage', 'Cuisson', 'Multimédia', 'Appareils Reconditionnés', 'Pièces Détachées'],
+    default: 'Lavage'
   },
   prixVente: {
     type: Number,

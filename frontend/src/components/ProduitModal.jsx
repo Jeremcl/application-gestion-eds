@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { produits as produitsAPI } from '../services/api';
 
-const CATEGORIES = ['Téléphones', 'Tablettes', 'Ordinateurs', 'Électroménager', 'TV/Écrans', 'Consoles', 'Accessoires', 'Autre'];
+const CATEGORIES = ['Lavage', 'Cuisson', 'Multimédia', 'Appareils Reconditionnés', 'Pièces Détachées'];
 const ETATS = [
   { value: 'neuf', label: 'Neuf' },
   { value: 'reconditionné', label: 'Reconditionné' },
