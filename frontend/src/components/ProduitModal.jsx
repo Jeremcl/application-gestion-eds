@@ -15,7 +15,7 @@ const ProduitModal = ({ produit, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
-    categorie: 'Autre',
+    categorie: 'Lavage',
     prixVente: 0,
     prixAchat: 0,
     stockDisponible: 0,
