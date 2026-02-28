@@ -6,7 +6,12 @@ const path = require('path');
 
 const app = express();
 
-// Configuration CORS pour autoriser le frontend
+// CORS ouvert pour l'API publique v1 — doit être déclaré AVANT le cors global
+// Sinon le cors global intercepte les preflight OPTIONS et bloque les origines externes
+app.use('/api/v1', cors());
+app.options('/api/v1/*', cors()); // Preflight explicite pour toutes les routes v1
+
+// Configuration CORS pour autoriser le frontend (appli interne)
 const corsOptions = {
   origin: [
     'https://eds.srv1068230.hstgr.cloud',
@@ -39,9 +44,7 @@ app.use('/api/statistiques', require('./routes/statistiques'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/produits', require('./routes/produits'));
 
-// API publique v1 — accessible depuis le site web (CORS ouvert)
-// Monte le router sur /api/v1 (les routes internes sont /products et /categories)
-app.use('/api/v1', cors());
+// API publique v1
 app.use('/api/v1', require('./routes/publicProducts'));
 
 // Servir les fichiers uploadés (photos)
