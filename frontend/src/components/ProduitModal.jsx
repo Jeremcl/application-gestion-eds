@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
-import { produits as produitsAPI } from '../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { X, Trash2, Upload, ImagePlus } from 'lucide-react';
+import { produits as produitsAPI, uploads as uploadsAPI } from '../services/api';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_URL}${url}`;
+};
 
 const CATEGORIES = ['Lavage', 'Cuisson', 'Multimédia', 'Appareils Reconditionnés', 'Pièces Détachées'];
 const ETATS = [
@@ -11,7 +18,8 @@ const ETATS = [
 
 const ProduitModal = ({ produit, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
-  const [newImageUrl, setNewImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
@@ -70,15 +78,38 @@ const ProduitModal = ({ produit, onClose, onSave }) => {
     }
   };
 
-  const handleAddImage = () => {
-    if (newImageUrl.trim()) {
-      setFormData({ ...formData, images: [...formData.images, newImageUrl.trim()] });
-      setNewImageUrl('');
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const urls = await Promise.all(
+        files.map(async (file) => {
+          const { data } = await uploadsAPI.uploadPhoto('produits', file);
+          return data.url;
+        })
+      );
+      setFormData(prev => ({ ...prev, images: [...prev.images, ...urls] }));
+    } catch (error) {
+      console.error('Erreur upload image:', error);
+      alert('Erreur lors de l\'upload de l\'image.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
     }
   };
 
-  const handleRemoveImage = (index) => {
-    setFormData({ ...formData, images: formData.images.filter((_, i) => i !== index) });
+  const handleRemoveImage = async (index) => {
+    const url = formData.images[index];
+    setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
+    if (url.startsWith('/uploads/')) {
+      const parts = url.split('/');
+      const filename = parts[parts.length - 1];
+      const type = parts[parts.length - 2];
+      try {
+        await uploadsAPI.deletePhoto(type, filename);
+      } catch (_) {}
+    }
   };
 
   const marge = formData.prixVente > 0 && formData.prixAchat > 0
@@ -263,43 +294,59 @@ const ProduitModal = ({ produit, onClose, onSave }) => {
 
           {/* Images */}
           <div className="form-group">
-            <label className="form-label">Images (URLs)</label>
-            <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-              <input
-                type="url"
-                className="form-input"
-                value={newImageUrl}
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                placeholder="https://exemple.com/image.jpg"
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddImage())}
-              />
-              <button type="button" className="btn btn-secondary" onClick={handleAddImage} style={{ whiteSpace: 'nowrap' }}>
-                <Plus size={16} />
-                Ajouter
+            <label className="form-label">Images</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+              {formData.images.map((url, i) => (
+                <div key={i} style={{ position: 'relative', width: '100px', height: '100px', flexShrink: 0 }}>
+                  <img
+                    src={getImageUrl(url)}
+                    alt={`Image ${i + 1}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--neutral-200)' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(i)}
+                    style={{
+                      position: 'absolute', top: '4px', right: '4px',
+                      background: 'rgba(220,38,38,0.85)', border: 'none', borderRadius: '50%',
+                      width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', color: 'white', padding: 0
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                style={{
+                  width: '100px', height: '100px', flexShrink: 0,
+                  border: '2px dashed var(--neutral-300)', borderRadius: 'var(--radius-md)',
+                  background: 'var(--neutral-50)', cursor: uploading ? 'wait' : 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '6px', color: 'var(--neutral-500)', fontSize: '0.75rem', fontWeight: 500,
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => { if (!uploading) { e.currentTarget.style.borderColor = 'var(--primary-400)'; e.currentTarget.style.color = 'var(--primary-600)'; }}}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--neutral-300)'; e.currentTarget.style.color = 'var(--neutral-500)'; }}
+              >
+                {uploading ? <Upload size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <ImagePlus size={20} />}
+                {uploading ? 'Envoi...' : 'Ajouter'}
               </button>
             </div>
-            {formData.images.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-                {formData.images.map((url, i) => (
-                  <div key={i} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-2)',
-                    padding: '4px 10px',
-                    background: 'var(--neutral-100)',
-                    borderRadius: 'var(--radius-full)',
-                    fontSize: '0.75rem',
-                    color: 'var(--neutral-700)',
-                    maxWidth: '250px'
-                  }}>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
-                    <button type="button" onClick={() => handleRemoveImage(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red-500)', padding: 0, display: 'flex' }}>
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div style={{ fontSize: '0.75rem', color: 'var(--neutral-400)', marginTop: 'var(--space-2)' }}>
+              JPG, PNG ou WEBP · Max 10 Mo par image
+            </div>
           </div>
 
           {/* Visibilité site */}
