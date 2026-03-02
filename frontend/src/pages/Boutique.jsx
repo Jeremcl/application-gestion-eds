@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, ShoppingBag, Eye, EyeOff, Edit, AlertTriangle, Globe, Filter, Package } from 'lucide-react';
+import { Plus, Search, ShoppingBag, Eye, EyeOff, Edit, AlertTriangle, Globe, Filter, Package, Trash2 } from 'lucide-react';
 import { produits as produitsAPI } from '../services/api';
 import ProduitModal from '../components/ProduitModal';
 import ResponsiveTable from '../components/ResponsiveTable';
@@ -92,6 +92,18 @@ const Boutique = () => {
     setShowModal(false);
     setEditingProduit(null);
     loadProduits();
+  };
+
+  const handleDelete = async (produit, e) => {
+    e.stopPropagation();
+    if (!window.confirm(`Supprimer "${produit.nom}" ? Cette action est irréversible.`)) return;
+    try {
+      await produitsAPI.delete(produit._id);
+      await loadProduits();
+    } catch (error) {
+      console.error('Erreur suppression produit:', error);
+      alert('Erreur lors de la suppression.');
+    }
   };
 
   const handleRowClick = (produitId) => {
@@ -247,6 +259,14 @@ const Boutique = () => {
             title="Voir le détail"
           >
             <Eye size={14} />
+          </button>
+          <button
+            onClick={(e) => handleDelete(produit, e)}
+            className="btn btn-danger"
+            style={{ padding: '6px 10px' }}
+            title="Supprimer"
+          >
+            <Trash2 size={14} />
           </button>
         </div>
       )

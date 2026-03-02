@@ -529,6 +529,17 @@ h6 { font-size: 0.875rem; }
   border-color: var(--neutral-400);
 }
 
+.btn-danger {
+  background: var(--red-500);
+  color: white;
+  border-color: var(--red-500);
+}
+
+.btn-danger:hover {
+  background: var(--red-600);
+  border-color: var(--red-600);
+}
+
 .btn-icon {
   width: 40px;
   height: 40px;
