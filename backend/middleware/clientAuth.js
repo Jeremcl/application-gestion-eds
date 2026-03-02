@@ -3,11 +3,15 @@ const Client = require('../models/Client');
 
 /**
  * Middleware d'authentification pour l'espace membre client.
- * Lit le JWT depuis le cookie httpOnly `eds_token` (distinct du JWT interne des users).
+ * Accepte le JWT depuis :
+ *   1. Cookie httpOnly `eds_token` (appel direct navigateur)
+ *   2. Header `Authorization: Bearer <token>` (appel serveur Next.js proxy)
  */
 const clientAuthMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies?.eds_token;
+    // Priorité : cookie (navigateur) → Bearer header (proxy Next.js)
+    const token = req.cookies?.eds_token
+      || req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
       return res.status(401).json({ success: false, message: 'Connexion requise' });

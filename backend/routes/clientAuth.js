@@ -110,6 +110,7 @@ router.post('/register', apiKeyAuth, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Compte créé avec succès',
+      token, // Retourné pour l'architecture proxy Next.js
       client: {
         id: client._id,
         nom: client.nom,
@@ -152,6 +153,7 @@ router.post('/login', apiKeyAuth, async (req, res) => {
 
     res.json({
       success: true,
+      token, // Retourné pour l'architecture proxy Next.js
       client: {
         id: client._id,
         nom: client.nom,
