@@ -483,7 +483,7 @@ const Calendrier = () => {
                   }}>
                     <div>
                       <div style={{ fontWeight: '600', fontSize: '1rem', marginBottom: 'var(--space-1)' }}>
-                        <span style={{ textTransform: 'uppercase' }}>{intervention.clientId?.nom}</span> {intervention.clientId?.prenom}
+                        <span style={{ textTransform: 'uppercase' }}>{intervention.clientId?.nom}</span>
                       </div>
                       <div style={{ color: 'var(--neutral-600)', fontSize: '0.875rem' }}>
                         {intervention.appareil?.type} - {intervention.appareil?.marque}
