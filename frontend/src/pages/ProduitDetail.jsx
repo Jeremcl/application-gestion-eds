@@ -345,24 +345,41 @@ const ProduitDetail = () => {
               ))}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Sections d'informations */}
-      {produit.sections && produit.sections.length > 0 && (
-        <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {produit.sections.map((section, i) => (
-            <div key={i} className="card">
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 'var(--space-3)', color: 'var(--neutral-700)' }}>
-                {section.titre}
-              </h3>
-              <p style={{ color: 'var(--neutral-600)', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
-                {section.contenu || <em style={{ color: 'var(--neutral-400)' }}>Aucun contenu</em>}
-              </p>
+          {/* Sections d'informations */}
+          {produit.sections && produit.sections.length > 0 && produit.sections.map((section, i) => (
+            <div key={i} style={{
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--neutral-200)',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                padding: 'var(--space-3) var(--space-4)',
+                background: 'var(--neutral-50)',
+                borderBottom: '1px solid var(--neutral-200)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)'
+              }}>
+                <div style={{
+                  width: '3px', height: '16px',
+                  background: 'var(--primary-500)',
+                  borderRadius: '2px',
+                  flexShrink: 0
+                }} />
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--neutral-800)', margin: 0 }}>
+                  {section.titre}
+                </h3>
+              </div>
+              <div style={{ padding: 'var(--space-4)', background: 'white' }}>
+                <p style={{ color: 'var(--neutral-600)', lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0, fontSize: '0.875rem' }}>
+                  {section.contenu || <em style={{ color: 'var(--neutral-400)' }}>Aucun contenu</em>}
+                </p>
+              </div>
             </div>
           ))}
+
         </div>
-      )}
+      </div>
 
       {showModal && (
         <ProduitModal
