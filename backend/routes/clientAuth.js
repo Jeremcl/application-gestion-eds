@@ -126,7 +126,7 @@ router.post('/register', apiKeyAuth, async (req, res) => {
 });
 
 // ─── POST /api/v1/auth/login ─────────────────────────────────────────────────
-router.post('/login', apiKeyAuth, async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
