@@ -17,16 +17,18 @@ const Interventions = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalInterventions, setTotalInterventions] = useState(0);
 
-  const statuts = ['Demande', 'Planifié', 'En cours', 'Diagnostic', 'Réparation', 'Terminé', 'Facturé'];
+  const statuts = ['Demande', 'Attente rendez-vous', 'Planifié', 'En cours', 'Diagnostic', 'Réparation', 'Terminé', 'Facturé', 'Annulé'];
 
   const statutColors = {
     'Demande': 'neutral',
+    'Attente rendez-vous': 'warning',
     'Planifié': 'info',
     'En cours': 'warning',
     'Diagnostic': 'info',
     'Réparation': 'warning',
     'Terminé': 'success',
-    'Facturé': 'success'
+    'Facturé': 'success',
+    'Annulé': 'neutral'
   };
 
   useEffect(() => {

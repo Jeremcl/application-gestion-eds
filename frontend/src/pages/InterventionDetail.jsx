@@ -11,12 +11,14 @@ import DepotAtelierModal from '../components/DepotAtelierModal';
 
 const statusColors = {
   'Demande': 'var(--blue-500)',
+  'Attente rendez-vous': '#F59E0B',
   'Planifié': 'var(--purple-500)',
   'En cours': 'var(--yellow-500)',
   'Diagnostic': 'var(--orange-500)',
   'Réparation': 'var(--pink-500)',
   'Terminé': 'var(--green-500)',
-  'Facturé': 'var(--primary-600)'
+  'Facturé': 'var(--primary-600)',
+  'Annulé': 'var(--neutral-500)'
 };
 
 const InterventionDetail = () => {
@@ -51,6 +53,26 @@ const InterventionDetail = () => {
       } catch (error) {
         console.error('Erreur suppression intervention:', error);
         alert('Erreur lors de la suppression');
+      }
+    }
+  };
+
+  const handleAccepter = async () => {
+    try {
+      await interventionsAPI.update(interventionId, { statut: 'Attente rendez-vous' });
+      loadIntervention();
+    } catch (error) {
+      console.error('Erreur acceptation intervention:', error);
+    }
+  };
+
+  const handleRefuser = async () => {
+    if (window.confirm('Êtes-vous sûr de vouloir refuser cette intervention ?')) {
+      try {
+        await interventionsAPI.update(interventionId, { statut: 'Annulé' });
+        loadIntervention();
+      } catch (error) {
+        console.error('Erreur refus intervention:', error);
       }
     }
   };
@@ -145,6 +167,26 @@ const InterventionDetail = () => {
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+            {intervention.statut === 'Demande' && (
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleAccepter}
+                  style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', background: 'var(--green-500)', borderColor: 'var(--green-500)' }}
+                >
+                  <CheckCircle size={18} />
+                  Accepter
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleRefuser}
+                  style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--red-500)', borderColor: 'var(--red-300)' }}
+                >
+                  <XCircle size={18} />
+                  Refuser
+                </button>
+              </>
+            )}
             {intervention.statut === 'Planifié' && intervention.typeIntervention === 'Atelier' && !intervention.dateDepot && (
               <button
                 className="btn btn-primary"

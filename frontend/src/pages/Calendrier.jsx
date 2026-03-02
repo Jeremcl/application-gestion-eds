@@ -109,12 +109,14 @@ const Calendrier = () => {
   const getStatusColor = (statut) => {
     const colors = {
       'Demande': '#D97706',
+      'Attente rendez-vous': '#F59E0B',
       'Planifié': '#2563EB',
       'En cours': '#059669',
       'Diagnostic': '#7C3AED',
       'Réparation': '#DC2626',
       'Terminé': '#10B981',
-      'Facturé': '#2D5A3D'
+      'Facturé': '#2D5A3D',
+      'Annulé': '#6B7280'
     };
     return colors[statut] || '#6B7280';
   };

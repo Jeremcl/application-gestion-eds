@@ -41,7 +41,7 @@ const interventionSchema = new mongoose.Schema({
   description: String,
   statut: {
     type: String,
-    enum: ['Demande', 'Planifié', 'En cours', 'Diagnostic', 'Réparation', 'Terminé', 'Facturé'],
+    enum: ['Demande', 'Attente rendez-vous', 'Planifié', 'En cours', 'Diagnostic', 'Réparation', 'Terminé', 'Facturé', 'Annulé'],
     default: 'Demande'
   },
   dateCreation: {
