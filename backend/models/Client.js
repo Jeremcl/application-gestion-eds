@@ -26,6 +26,13 @@ const clientSchema = new mongoose.Schema({
   email: String,
   appareils: [appareilSchema],
   notes: String,
+  // Espace membre
+  passwordHash: String,
+  compteActif: {
+    type: Boolean,
+    default: false
+  },
+  dateInscription: Date,
   dateCreation: {
     type: Date,
     default: Date.now
