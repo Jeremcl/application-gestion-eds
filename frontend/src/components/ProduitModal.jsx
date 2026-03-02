@@ -1,8 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Trash2, Upload, ImagePlus } from 'lucide-react';
+import { X, Trash2, Upload, ImagePlus, RefreshCw } from 'lucide-react';
 import { produits as produitsAPI, uploads as uploadsAPI } from '../services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+const CAT_PREFIXES = {
+  'Lavage': 'LAV',
+  'Cuisson': 'CUI',
+  'Multimédia': 'MUL',
+  'Appareils Reconditionnés': 'APP',
+  'Pièces Détachées': 'PIE'
+};
+
+const generateSKU = (nom, categorie) => {
+  const prefix = CAT_PREFIXES[categorie] || categorie.slice(0, 3).toUpperCase();
+  const normalized = nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const initials = normalized
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(w => w[0].toUpperCase())
+    .join('')
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 4);
+  const num = String(Math.floor(1000 + Math.random() * 9000));
+  return `${prefix}-${initials || 'XX'}-${num}`;
+};
 const getImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http')) return url;
@@ -20,6 +42,7 @@ const ProduitModal = ({ produit, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const skuEditedRef = useRef(false);
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
@@ -35,7 +58,14 @@ const ProduitModal = ({ produit, onClose, onSave }) => {
   });
 
   useEffect(() => {
+    if (!produit && formData.nom.trim() && !skuEditedRef.current) {
+      setFormData(prev => ({ ...prev, sku: generateSKU(prev.nom, prev.categorie) }));
+    }
+  }, [formData.nom, formData.categorie]);
+
+  useEffect(() => {
     if (produit) {
+      skuEditedRef.current = true;
       setFormData({
         nom: produit.nom || '',
         description: produit.description || '',
@@ -154,13 +184,26 @@ const ProduitModal = ({ produit, onClose, onSave }) => {
           <div className="grid grid-2 mb-4">
             <div className="form-group">
               <label className="form-label">Référence / SKU</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                placeholder="Ex: IPH-13PM-256-BLK"
-              />
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.sku}
+                  onChange={(e) => { skuEditedRef.current = true; setFormData({ ...formData, sku: e.target.value }); }}
+                  placeholder="Généré automatiquement"
+                />
+                {!produit && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '0 12px', flexShrink: 0 }}
+                    title="Regénérer le SKU"
+                    onClick={() => { skuEditedRef.current = false; setFormData(prev => ({ ...prev, sku: generateSKU(prev.nom, prev.categorie) })); }}
+                  >
+                    <RefreshCw size={15} />
+                  </button>
+                )}
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Catégorie *</label>
