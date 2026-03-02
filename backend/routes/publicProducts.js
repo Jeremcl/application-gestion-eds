@@ -15,6 +15,8 @@
 const express = require('express');
 const router = express.Router();
 const Produit = require('../models/Produit');
+const Client = require('../models/Client');
+const Intervention = require('../models/Intervention');
 const apiKeyAuth = require('../middleware/apiKeyAuth');
 
 // ─── Source de vérité unique pour les catégories EDS22 ───────────────────────
@@ -180,6 +182,72 @@ router.delete('/products/:id', async (req, res) => {
     }
     res.json({ success: true, message: 'Produit supprimé (soft delete)' });
   } catch (error) {
+    res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
+  }
+});
+
+// ─── POST /api/v1/reservations ────────────────────────────────────────────────
+/**
+ * Reçoit une demande de réservation depuis le site web.
+ * Cherche ou crée le client, puis crée une intervention avec statut 'Demande'.
+ *
+ * Body attendu :
+ *   nom*, prenom, email*, telephone*, appareilType, appareilMarque,
+ *   appareilModele, description*, dateSouhaitee, notes
+ */
+router.post('/reservations', async (req, res) => {
+  try {
+    const {
+      nom, prenom = '', email = '', telephone,
+      appareilType = '', appareilMarque = '', appareilModele = '',
+      description = '', dateSouhaitee, notes = ''
+    } = req.body;
+
+    if (!nom || !telephone || !description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Champs requis manquants : nom, telephone, description'
+      });
+    }
+
+    // 1. Trouver ou créer le client
+    let client = null;
+    if (email) client = await Client.findOne({ email: email.toLowerCase().trim() });
+    if (!client && telephone) client = await Client.findOne({ telephone: telephone.trim() });
+
+    if (!client) {
+      client = new Client({
+        nom: nom.trim(),
+        prenom: prenom.trim(),
+        email: email.toLowerCase().trim() || undefined,
+        telephone: telephone.trim()
+      });
+      await client.save();
+    }
+
+    // 2. Créer l'intervention avec statut 'Demande'
+    const intervention = new Intervention({
+      clientId: client._id,
+      statut: 'Demande',
+      description: description.trim(),
+      appareil: {
+        type: appareilType.trim() || undefined,
+        marque: appareilMarque.trim() || undefined,
+        modele: appareilModele.trim() || undefined
+      },
+      datePrevue: dateSouhaitee ? new Date(dateSouhaitee) : undefined,
+      notes: notes.trim() || undefined
+    });
+
+    await intervention.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Demande de réservation reçue',
+      numero: intervention.numero
+    });
+  } catch (error) {
+    console.error('Erreur réservation:', error);
     res.status(500).json({ success: false, message: 'Erreur serveur', error: error.message });
   }
 });

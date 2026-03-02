@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Users, Wrench, Package, FileText, Settings, Search, Bell, LogOut, ChevronDown, Wrench as WrenchIcon, MonitorSmartphone, FileStack, Truck, Menu, Calendar, BarChart3, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
-import { pieces, maintenance as maintenanceAPI, appareilsPret } from '../services/api';
+import { pieces, maintenance as maintenanceAPI, appareilsPret, interventions as interventionsAPI } from '../services/api';
 import logoEDS from '../assets/Logo-eds-vert.svg';
 
 const Layout = ({ children }) => {
@@ -11,6 +11,7 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const [stockAlertes, setStockAlertes] = useState(0);
   const [appareilsPretesCount, setAppareilsPretesCount] = useState(0);
+  const [demandesCount, setDemandesCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [maintenanceStatus, setMaintenanceStatus] = useState(null);
@@ -20,6 +21,7 @@ const Layout = ({ children }) => {
   useEffect(() => {
     loadStockAlertes();
     loadAppareilsPretesCount();
+    loadDemandesCount();
     if (user?.role === 'admin') {
       loadMaintenanceStatus();
     }
@@ -48,6 +50,15 @@ const Layout = ({ children }) => {
       setStockAlertes(data.count);
     } catch (error) {
       console.error('Erreur chargement alertes stock:', error);
+    }
+  };
+
+  const loadDemandesCount = async () => {
+    try {
+      const { data } = await interventionsAPI.getAll({ statut: 'Demande', limit: 1 });
+      setDemandesCount(data.total || 0);
+    } catch (error) {
+      console.error('Erreur chargement demandes:', error);
     }
   };
 
@@ -87,7 +98,7 @@ const Layout = ({ children }) => {
   const navItems = [
     { path: '/', icon: Home, label: 'Dashboard' },
     { path: '/clients', icon: Users, label: 'Clients' },
-    { path: '/interventions', icon: Wrench, label: 'Interventions' },
+    { path: '/interventions', icon: Wrench, label: 'Interventions', badge: demandesCount },
     { path: '/calendrier', icon: Calendar, label: 'Calendrier' },
     { path: '/stock', icon: Package, label: 'Stock', badge: stockAlertes },
     { path: '/appareils-pret', icon: MonitorSmartphone, label: 'Appareils de prêt', badge: appareilsPretesCount },
