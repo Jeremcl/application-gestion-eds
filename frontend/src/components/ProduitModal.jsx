@@ -234,6 +234,66 @@ const ProduitModal = ({ produit, onClose, onSave }) => {
             />
           </div>
 
+          {/* Sections d'informations */}
+          <div className="form-group">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Sections d'informations</label>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                onClick={() => setFormData(prev => ({ ...prev, sections: [...prev.sections, { titre: '', contenu: '' }] }))}
+              >
+                <Plus size={14} /> Ajouter une section
+              </button>
+            </div>
+            {formData.sections.length === 0 ? (
+              <p style={{ fontSize: '0.8rem', color: 'var(--neutral-400)', fontStyle: 'italic' }}>
+                Aucune section. Ajoutez des blocs d'informations personnalisés (caractéristiques, dimensions, garantie…)
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                {formData.sections.map((section, i) => (
+                  <div key={i} style={{ border: '1px solid var(--neutral-200)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', background: 'var(--neutral-50)' }}>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Titre de la section (ex: Caractéristiques)"
+                        value={section.titre}
+                        onChange={(e) => {
+                          const updated = [...formData.sections];
+                          updated[i] = { ...updated[i], titre: e.target.value };
+                          setFormData(prev => ({ ...prev, sections: updated }));
+                        }}
+                        style={{ fontWeight: 600 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, sections: prev.sections.filter((_, j) => j !== i) }))}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red-500)', padding: '4px', display: 'flex', flexShrink: 0 }}
+                        title="Supprimer la section"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <textarea
+                      className="form-input"
+                      placeholder="Contenu de la section..."
+                      value={section.contenu}
+                      rows={3}
+                      onChange={(e) => {
+                        const updated = [...formData.sections];
+                        updated[i] = { ...updated[i], contenu: e.target.value };
+                        setFormData(prev => ({ ...prev, sections: updated }));
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* État */}
           <div className="form-group">
             <label className="form-label">État *</label>
@@ -392,66 +452,6 @@ const ProduitModal = ({ produit, onClose, onSave }) => {
             <div style={{ fontSize: '0.75rem', color: 'var(--neutral-400)', marginTop: 'var(--space-2)' }}>
               JPG, PNG ou WEBP · Max 10 Mo par image
             </div>
-          </div>
-
-          {/* Sections d'informations */}
-          <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
-              <label className="form-label" style={{ marginBottom: 0 }}>Sections d'informations</label>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                onClick={() => setFormData(prev => ({ ...prev, sections: [...prev.sections, { titre: '', contenu: '' }] }))}
-              >
-                <Plus size={14} /> Ajouter une section
-              </button>
-            </div>
-            {formData.sections.length === 0 ? (
-              <p style={{ fontSize: '0.8rem', color: 'var(--neutral-400)', fontStyle: 'italic' }}>
-                Aucune section. Ajoutez des blocs d'informations personnalisés (caractéristiques, dimensions, garantie…)
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                {formData.sections.map((section, i) => (
-                  <div key={i} style={{ border: '1px solid var(--neutral-200)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', background: 'var(--neutral-50)' }}>
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', alignItems: 'center' }}>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Titre de la section (ex: Caractéristiques)"
-                        value={section.titre}
-                        onChange={(e) => {
-                          const updated = [...formData.sections];
-                          updated[i] = { ...updated[i], titre: e.target.value };
-                          setFormData(prev => ({ ...prev, sections: updated }));
-                        }}
-                        style={{ fontWeight: 600 }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, sections: prev.sections.filter((_, j) => j !== i) }))}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red-500)', padding: '4px', display: 'flex', flexShrink: 0 }}
-                        title="Supprimer la section"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                    <textarea
-                      className="form-input"
-                      placeholder="Contenu de la section..."
-                      value={section.contenu}
-                      rows={3}
-                      onChange={(e) => {
-                        const updated = [...formData.sections];
-                        updated[i] = { ...updated[i], contenu: e.target.value };
-                        setFormData(prev => ({ ...prev, sections: updated }));
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Visibilité site */}
