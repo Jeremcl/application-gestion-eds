@@ -1,11 +1,13 @@
 /**
  * Routes protégées de l'espace membre client
  * Montées sur : /api/v1/me
- * Auth : cookie httpOnly `eds_token`
+ * Auth : cookie httpOnly `eds_token` OU header Authorization: Bearer <token>
  *
  * GET  /api/v1/me/interventions  → historique des interventions du client connecté
- * POST /api/v1/me/reservations   → nouvelle demande sans re-saisir ses infos
+ * POST /api/v1/me/reservations   → nouvelle demande (supporte appareilId)
  * GET  /api/v1/me/profile        → profil complet (appareils inclus)
+ * GET  /api/v1/me/appareils      → liste des appareils enregistrés
+ * POST /api/v1/me/appareils      → ajouter un appareil
  */
 const express = require('express');
 const router = express.Router();
@@ -67,16 +69,82 @@ router.get('/profile', async (req, res) => {
   }
 });
 
+// ─── GET /api/v1/me/appareils ────────────────────────────────────────────────
+/**
+ * Retourne la liste des appareils enregistrés pour le client connecté.
+ * Réponse : { success: true, data: [ { _id, type, marque, modele }, ... ] }
+ */
+router.get('/appareils', async (req, res) => {
+  try {
+    const client = await Client.findById(req.client._id).select('appareils');
+    res.json({ success: true, data: client.appareils || [] });
+  } catch (error) {
+    console.error('Erreur appareils membre:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// ─── POST /api/v1/me/appareils ───────────────────────────────────────────────
+/**
+ * Ajoute un appareil au profil du client connecté.
+ * Body : { type: string, marque?: string, modele?: string }
+ * Réponse : { success: true, data: { _id, type, marque, modele } }
+ */
+router.post('/appareils', async (req, res) => {
+  try {
+    const { type, marque = '', modele = '' } = req.body;
+
+    if (!type || !type.trim()) {
+      return res.status(400).json({ success: false, message: 'Le type d\'appareil est requis' });
+    }
+
+    const client = await Client.findById(req.client._id);
+
+    const nouvelAppareil = {
+      type: type.trim(),
+      marque: marque.trim() || undefined,
+      modele: modele.trim() || undefined
+    };
+
+    client.appareils.push(nouvelAppareil);
+    await client.save();
+
+    // Récupérer l'appareil avec son _id généré par Mongoose
+    const appareilAjoute = client.appareils[client.appareils.length - 1];
+
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: appareilAjoute._id,
+        type: appareilAjoute.type,
+        marque: appareilAjoute.marque,
+        modele: appareilAjoute.modele
+      }
+    });
+  } catch (error) {
+    console.error('Erreur ajout appareil membre:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
 // ─── POST /api/v1/me/reservations ────────────────────────────────────────────
 /**
  * Crée une demande d'intervention pour le client connecté.
- * Ses infos (nom, tel, email) sont récupérées automatiquement depuis son compte.
+ * Ses infos sont récupérées automatiquement depuis son compte.
  *
- * Body : appareilType, appareilMarque, appareilModele, description*, dateSouhaitee, notes
+ * Body :
+ *   description*       — description du problème (obligatoire)
+ *   appareilId?        — _id d'un appareil existant du client (optionnel)
+ *   appareilType?      — type libre si pas d'appareilId
+ *   appareilMarque?    — marque libre si pas d'appareilId
+ *   appareilModele?    — modele libre si pas d'appareilId
+ *   dateSouhaitee?     — date souhaitée d'intervention
+ *   notes?             — notes complémentaires
  */
 router.post('/reservations', async (req, res) => {
   try {
     const {
+      appareilId,
       appareilType = '',
       appareilMarque = '',
       appareilModele = '',
@@ -92,15 +160,31 @@ router.post('/reservations', async (req, res) => {
       });
     }
 
-    const intervention = new (require('../models/Intervention'))({
+    // Si appareilId fourni, récupérer les infos depuis le profil client
+    let appareilData = {
+      type: appareilType.trim() || undefined,
+      marque: appareilMarque.trim() || undefined,
+      modele: appareilModele.trim() || undefined
+    };
+
+    if (appareilId) {
+      const client = await Client.findById(req.client._id).select('appareils');
+      const appareil = client.appareils.id(appareilId);
+      if (appareil) {
+        appareilData = {
+          type: appareil.type,
+          marque: appareil.marque,
+          modele: appareil.modele
+        };
+      }
+    }
+
+    const intervention = new Intervention({
       clientId: req.client._id,
+      appareilId: appareilId || undefined,
       statut: 'Demande',
       description: description.trim(),
-      appareil: {
-        type: appareilType.trim() || undefined,
-        marque: appareilMarque.trim() || undefined,
-        modele: appareilModele.trim() || undefined
-      },
+      appareil: appareilData,
       datePrevue: dateSouhaitee ? new Date(dateSouhaitee) : undefined,
       notes: notes.trim() || undefined
     });
