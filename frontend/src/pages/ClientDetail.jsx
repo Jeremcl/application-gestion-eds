@@ -83,13 +83,7 @@ const ClientDetail = () => {
       if (editingDevice) {
         await clientsAPI.updateDevice(clientId, editingDevice._id, deviceFormData);
       } else {
-        // Ajouter un nouvel appareil au client
-        const clientData = await clientsAPI.getById(clientId);
-        const updatedAppareils = [...(clientData.data.appareils || []), {
-          _id: Date.now().toString(),
-          ...deviceFormData
-        }];
-        await clientsAPI.update(clientId, { appareils: updatedAppareils });
+        await clientsAPI.addAppareil(clientId, deviceFormData);
       }
       setShowDeviceModal(false);
       loadClientData();
