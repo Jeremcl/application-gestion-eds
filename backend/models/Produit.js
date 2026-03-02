@@ -37,6 +37,10 @@ const produitSchema = new mongoose.Schema({
   images: [{
     type: String
   }],
+  sections: [{
+    titre: { type: String, required: true },
+    contenu: { type: String, default: '' }
+  }],
   etat: {
     type: String,
     enum: ['neuf', 'reconditionné', 'piece_detachee'],

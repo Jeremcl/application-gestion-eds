@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Globe, EyeOff, AlertTriangle, Package, Tag, DollarSign, Layers, Image } from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_URL}${url}`;
+};
 import { produits as produitsAPI } from '../services/api';
 import ProduitModal from '../components/ProduitModal';
 
@@ -196,7 +203,7 @@ const ProduitDetail = () => {
                     border: '1px solid var(--neutral-200)'
                   }}>
                     <img
-                      src={url}
+                      src={getImageUrl(url)}
                       alt={`${produit.nom} - image ${i + 1}`}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => {
@@ -340,6 +347,22 @@ const ProduitDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Sections d'informations */}
+      {produit.sections && produit.sections.length > 0 && (
+        <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {produit.sections.map((section, i) => (
+            <div key={i} className="card">
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 'var(--space-3)', color: 'var(--neutral-700)' }}>
+                {section.titre}
+              </h3>
+              <p style={{ color: 'var(--neutral-600)', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
+                {section.contenu || <em style={{ color: 'var(--neutral-400)' }}>Aucun contenu</em>}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {showModal && (
         <ProduitModal
