@@ -172,18 +172,26 @@ const ClientDetail = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
               <Phone size={18} style={{ color: 'var(--neutral-500)' }} />
-              <a
-                href={`tel:${client.telephone}`}
-                style={{
-                  color: 'var(--primary-600)',
-                  textDecoration: 'none',
-                  cursor: 'pointer'
-                }}
-                onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
-                onMouseOut={(e) => e.target.style.textDecoration = 'none'}
-              >
-                {client.telephone}
-              </a>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <a
+                  href={`tel:${client.telephone}`}
+                  style={{ color: 'var(--primary-600)', textDecoration: 'none', cursor: 'pointer' }}
+                  onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                  onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                >
+                  {client.telephone}
+                </a>
+                {client.telephoneSecondaire && (
+                  <a
+                    href={`tel:${client.telephoneSecondaire}`}
+                    style={{ color: 'var(--neutral-500)', textDecoration: 'none', cursor: 'pointer', fontSize: '0.875rem' }}
+                    onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                    onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                  >
+                    {client.telephoneSecondaire}
+                  </a>
+                )}
+              </div>
             </div>
             {client.email && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
@@ -204,12 +212,16 @@ const ClientDetail = () => {
             )}
           </div>
           <div>
-            {client.adresse && (
+            {(client.adresseRue || client.adresse || client.codePostal || client.ville) && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)' }}>
                 <MapPin size={18} style={{ color: 'var(--neutral-500)', marginTop: '2px' }} />
                 <div>
-                  <div>{client.adresse}</div>
-                  <div>{client.codePostal} {client.ville}</div>
+                  {(client.adresseRue || client.adresse) && (
+                    <div>{client.adresseRue || client.adresse}</div>
+                  )}
+                  {(client.codePostal || client.ville) && (
+                    <div>{[client.codePostal, client.ville].filter(Boolean).join(' ')}</div>
+                  )}
                 </div>
               </div>
             )}
