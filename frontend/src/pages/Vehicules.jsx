@@ -141,31 +141,16 @@ const Vehicules = () => {
       </div>
 
       {/* Filters */}
-      <div style={{
-        display: 'flex',
-        gap: 'var(--space-4)',
-        marginBottom: 'var(--space-6)',
-        flexWrap: 'wrap'
-      }}>
+      <div className="search-bar">
         {/* Search */}
-        <div style={{ flex: '1', minWidth: '200px', position: 'relative' }}>
-          <Search
-            size={18}
-            style={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--neutral-400)'
-            }}
-          />
+        <div className="search-bar-input">
+          <Search size={18} className="search-icon" />
           <input
             type="text"
             className="form-input"
             placeholder="Rechercher un vehicule..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ paddingLeft: '40px' }}
           />
         </div>
 

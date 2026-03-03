@@ -87,8 +87,8 @@ const Interventions = () => {
           <h1 className="page-title">Interventions</h1>
           <p className="page-subtitle">{totalInterventions} intervention(s) {totalPages > 1 && `- Page ${currentPage}/${totalPages}`}</p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', gap: '4px', background: 'white', borderRadius: 'var(--radius-md)', padding: '4px' }}>
+        <div className="page-header-actions">
+          <div className="view-toggle">
             <button
               className={`btn ${viewMode === 'list' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setViewMode('list')}
@@ -333,14 +333,7 @@ const Interventions = () => {
 
       {/* Pagination */}
       {!loading && totalPages > 1 && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 'var(--space-3)',
-          marginTop: 'var(--space-6)',
-          padding: 'var(--space-4)'
-        }}>
+        <div className="pagination-container">
           <button
             className="btn btn-secondary"
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -350,10 +343,9 @@ const Interventions = () => {
             ← Précédent
           </button>
 
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <div className="pagination-pages">
             {[...Array(totalPages)].map((_, index) => {
               const pageNum = index + 1;
-              // Afficher seulement quelques pages autour de la page actuelle
               if (
                 pageNum === 1 ||
                 pageNum === totalPages ||

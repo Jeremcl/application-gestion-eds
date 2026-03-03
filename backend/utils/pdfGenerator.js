@@ -258,21 +258,6 @@ const genererAttestationEnlevement = (data, stream) => {
 
   // === EN-TÊTE ===
 
-  // Logo EDS22 en haut à gauche (si disponible)
-  const logoPath = path.join(__dirname, '..', 'assets', 'Logo-eds-vert.svg');
-  try {
-    if (fs.existsSync(logoPath)) {
-      const svgContent = fs.readFileSync(logoPath, 'utf8');
-      // Positionner le logo
-      doc.save();
-      doc.translate(leftMargin, 50);
-      SVGtoPDF(doc, svgContent, 0, 0, { width: 60, height: 60 });
-      doc.restore();
-    }
-  } catch (error) {
-    console.error('Erreur chargement logo:', error);
-  }
-
   // Référence "FICHE AEA.1 /" en haut à droite
   doc.fontSize(9).font('Helvetica').fillColor('#000000');
   doc.text('FICHE AEA.1 /', rightMargin - 80, 50, { width: 80, align: 'right' });
@@ -394,14 +379,30 @@ const genererAttestationEnlevement = (data, stream) => {
   doc.moveDown(4);
 
   // === PIED DE PAGE ===
-  // Positionner le pied de page en bas de la page
   const footerY = doc.page.height - doc.page.margins.bottom - 30;
+  const logoSize = 28;
+
+  // Logo EDS22 en bas à gauche, discret
+  const logoPath = path.join(__dirname, '..', 'assets', 'Logo-eds-vert.svg');
+  try {
+    if (fs.existsSync(logoPath)) {
+      const svgContent = fs.readFileSync(logoPath, 'utf8');
+      doc.save();
+      doc.translate(leftMargin, footerY - logoSize / 2);
+      SVGtoPDF(doc, svgContent, 0, 0, { width: logoSize, height: logoSize });
+      doc.restore();
+    }
+  } catch (error) {
+    console.error('Erreur chargement logo:', error);
+  }
+
+  // Texte pied de page centré (décalé pour laisser la place au logo)
   doc.fontSize(9).font('Helvetica').fillColor(EDS_GREEN);
   doc.text(
     'EDS22 - Électro Dépannage Service - SIRET : 91917A3200006',
-    leftMargin,
+    leftMargin + logoSize + 8,
     footerY,
-    { width: contentWidth, align: 'center' }
+    { width: contentWidth - logoSize - 8, align: 'center' }
   );
 
   doc.end();

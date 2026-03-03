@@ -294,4 +294,110 @@ router.post('/:id/depot-atelier', async (req, res) => {
   }
 });
 
+// GET génération d'un fichier .eml pour l'email de confirmation dépôt atelier
+router.get('/:id/email-depot', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const MailComposer = require('nodemailer/lib/mail-composer');
+
+    const intervention = await Intervention.findById(req.params.id).populate('clientId');
+    if (!intervention) {
+      return res.status(404).json({ message: 'Intervention non trouvée' });
+    }
+    if (!intervention.dateDepot) {
+      return res.status(400).json({ message: 'Aucun dépôt atelier enregistré pour cette intervention' });
+    }
+
+    const interventionsDir = path.join(__dirname, '../uploads/interventions', intervention._id.toString());
+    const prenomNom = [intervention.clientId?.prenom, intervention.clientId?.nom].filter(Boolean).join(' ') || 'Client';
+    const clientEmail = intervention.clientId?.email || '';
+    const numero = intervention.numero;
+
+    // Pièces jointes : fiche DA + photos
+    const attachments = [];
+
+    const ficheDAPath = path.join(interventionsDir, 'fiche-da.pdf');
+    if (fs.existsSync(ficheDAPath)) {
+      attachments.push({ filename: `Fiche-Depot-${numero}.pdf`, path: ficheDAPath });
+    }
+
+    const photoCount = intervention.photosDepot?.length || 0;
+    for (let i = 0; i < photoCount; i++) {
+      const photoPath = path.join(interventionsDir, `depot-${i}.jpg`);
+      if (fs.existsSync(photoPath)) {
+        attachments.push({ filename: `Photo-depot-${i + 1}.jpg`, path: photoPath });
+      }
+    }
+
+    const textBody = [
+      `Bonjour ${prenomNom},`,
+      ``,
+      `Suite au dépôt de votre appareil dans notre atelier, nous vous confirmons la bonne réception de celui-ci et vous adressons ce mail récapitulatif.`,
+      ``,
+      `Numéro de suivi : ${numero}`,
+      ``,
+      `Vous trouverez en pièce jointe :`,
+      `- La fiche de dépôt (DA ${numero}) à conserver`,
+      `- Les photos prises lors du dépôt`,
+      ``,
+      `Notre équipe prendra contact avec vous dès que le diagnostic sera effectué pour vous informer de l'état de votre appareil et du devis éventuel.`,
+      ``,
+      `En cas de question, n'hésitez pas à nous contacter.`,
+      ``,
+      `Cordialement,`,
+      `L'équipe EDS22`,
+      `stephanejegou.eds@outlook.fr`
+    ].join('\n');
+
+    const htmlBody = `<div style="font-family: Arial, sans-serif; max-width: 600px; color: #333;">
+  <div style="background-color: #2D5A3D; padding: 24px; text-align: center;">
+    <h1 style="color: #fff; margin: 0; font-size: 20px;">EDS22 - Électroménager Dépannage Services</h1>
+  </div>
+  <div style="padding: 32px 24px;">
+    <p>Bonjour <strong>${prenomNom}</strong>,</p>
+    <p>Suite au dépôt de votre appareil dans notre atelier, nous vous confirmons la bonne réception de celui-ci et vous adressons ce mail récapitulatif.</p>
+    <div style="background:#f4f7f4; border-left:4px solid #2D5A3D; padding:16px; margin:24px 0; border-radius:4px;">
+      <strong>Numéro de suivi :</strong> ${numero}
+    </div>
+    <p>Vous trouverez en pièce jointe :</p>
+    <ul>
+      <li>La <strong>fiche de dépôt (DA ${numero})</strong> à conserver</li>
+      <li>Les <strong>photos</strong> prises lors du dépôt</li>
+    </ul>
+    <p>Notre équipe prendra contact avec vous dès que le diagnostic sera effectué pour vous informer de l'état de votre appareil et du devis éventuel.</p>
+    <p>En cas de question, n'hésitez pas à nous contacter.</p>
+    <p style="margin-top:32px;">Cordialement,<br><strong>L'équipe EDS22</strong><br>
+    <a href="mailto:stephanejegou.eds@outlook.fr" style="color:#2D5A3D;">stephanejegou.eds@outlook.fr</a></p>
+  </div>
+  <div style="background:#f0f0f0; padding:16px; text-align:center; font-size:12px; color:#888;">
+    EDS22 - Électroménager Dépannage Services
+  </div>
+</div>`;
+
+    const mail = new MailComposer({
+      from: '"EDS22" <stephanejegou.eds@outlook.fr>',
+      to: clientEmail,
+      subject: `Confirmation de dépôt atelier - Intervention ${numero}`,
+      text: textBody,
+      html: htmlBody,
+      attachments
+    });
+
+    mail.compile().build((err, message) => {
+      if (err) {
+        console.error('❌ Erreur génération EML:', err);
+        return res.status(500).json({ message: 'Erreur génération email', error: err.message });
+      }
+      res.setHeader('Content-Type', 'message/rfc822');
+      res.setHeader('Content-Disposition', `attachment; filename="Confirmation-depot-${numero}.eml"`);
+      res.send(message);
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur email-depot:', error);
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
 module.exports = router;

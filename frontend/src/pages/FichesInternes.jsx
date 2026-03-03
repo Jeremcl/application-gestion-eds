@@ -319,22 +319,12 @@ const FichesInternes = () => {
       {/* Modal prévisualisation */}
       {showPreviewModal && (
         <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-            padding: 'var(--space-4)'
-          }}
+          className="modal-container"
+          style={{ zIndex: 2000 }}
           onClick={() => setShowPreviewModal(false)}
         >
           <div
+            className="modal-content"
             style={{
               background: 'white',
               borderRadius: 'var(--radius-xl)',

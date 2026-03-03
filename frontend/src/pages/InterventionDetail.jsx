@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Wrench, User, Monitor, Calendar, Clock, Euro,
-  FileText, Package, Edit, Trash2, CheckCircle, XCircle, MonitorSmartphone, ChevronRight, ClipboardList
+  FileText, Package, Edit, Trash2, CheckCircle, XCircle, MonitorSmartphone, ChevronRight, ClipboardList, Mail
 } from 'lucide-react';
 import { interventions as interventionsAPI } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
@@ -75,6 +75,35 @@ const InterventionDetail = () => {
         console.error('Erreur refus intervention:', error);
       }
     }
+  };
+
+  const ouvrirEmailDepot = () => {
+    const email = intervention.clientId?.email;
+    if (!email) return;
+
+    const prenomNom = [intervention.clientId?.prenom, intervention.clientId?.nom].filter(Boolean).join(' ');
+    const subject = `Confirmation de dépôt atelier - Intervention ${intervention.numero}`;
+    const body = [
+      `Bonjour ${prenomNom},`,
+      ``,
+      `Suite au dépôt de votre appareil dans notre atelier, nous vous confirmons la bonne réception de celui-ci et vous adressons ce mail récapitulatif.`,
+      ``,
+      `Numéro de suivi : ${intervention.numero}`,
+      ``,
+      `Vous trouverez en pièce jointe :`,
+      `- La fiche de dépôt (DA ${intervention.numero}) à conserver`,
+      `- Les photos prises lors du dépôt`,
+      ``,
+      `Notre équipe prendra contact avec vous dès que le diagnostic sera effectué pour vous informer de l'état de votre appareil et du devis éventuel.`,
+      ``,
+      `En cas de question, n'hésitez pas à nous contacter.`,
+      ``,
+      `Cordialement,`,
+      `L'équipe EDS22`,
+      `stephanejegou.eds@outlook.fr`
+    ].join('\n');
+
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const formatDate = (date) => {
@@ -614,7 +643,36 @@ const InterventionDetail = () => {
                 QR Code
               </a>
             )}
+            {intervention.clientId?.email ? (
+              <button
+                onClick={ouvrirEmailDepot}
+                className="btn btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', justifyContent: 'center' }}
+              >
+                <Mail size={18} />
+                Envoyer par email
+              </button>
+            ) : (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+                padding: 'var(--space-2) var(--space-3)',
+                background: 'var(--neutral-100)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.8rem',
+                color: 'var(--neutral-500)'
+              }}>
+                <Mail size={16} />
+                Pas d'email client renseigné
+              </div>
+            )}
           </div>
+          {intervention.clientId?.email && (
+            <p style={{ fontSize: '0.78rem', color: 'var(--neutral-500)', marginTop: 'var(--space-3)', marginBottom: 0 }}>
+              Outlook s'ouvrira avec le message pré-rempli. Pensez à joindre la fiche PDF et les photos avant d'envoyer.
+            </p>
+          )}
         </div>
       )}
 

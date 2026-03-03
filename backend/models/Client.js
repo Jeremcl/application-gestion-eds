@@ -17,12 +17,14 @@ const clientSchema = new mongoose.Schema({
     required: false
   },
   adresse: String,
+  adresseRue: String,
   codePostal: String,
   ville: String,
   telephone: {
     type: String,
     required: true
   },
+  telephoneSecondaire: String,
   email: String,
   appareils: [appareilSchema],
   notes: String,

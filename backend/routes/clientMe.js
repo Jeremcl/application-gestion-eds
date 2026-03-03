@@ -3,11 +3,12 @@
  * Montées sur : /api/v1/me
  * Auth : cookie httpOnly `eds_token` OU header Authorization: Bearer <token>
  *
- * GET  /api/v1/me/interventions  → historique des interventions du client connecté
- * POST /api/v1/me/reservations   → nouvelle demande (supporte appareilId)
- * GET  /api/v1/me/profile        → profil complet (appareils inclus)
- * GET  /api/v1/me/appareils      → liste des appareils enregistrés
- * POST /api/v1/me/appareils      → ajouter un appareil
+ * GET   /api/v1/me/interventions  → historique des interventions du client connecté
+ * POST  /api/v1/me/reservations   → nouvelle demande (supporte appareilId)
+ * GET   /api/v1/me/profile        → profil complet (appareils inclus)
+ * PATCH /api/v1/me/profile        → mise à jour du profil (adresseRue, codePostal, ville, telephoneSecondaire)
+ * GET   /api/v1/me/appareils      → liste des appareils enregistrés
+ * POST  /api/v1/me/appareils      → ajouter un appareil
  */
 const express = require('express');
 const router = express.Router();
@@ -65,6 +66,36 @@ router.get('/profile', async (req, res) => {
 
     res.json({ success: true, data: client });
   } catch (error) {
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// ─── PATCH /api/v1/me/profile ────────────────────────────────────────────────
+/**
+ * Met à jour le profil du client connecté.
+ * Champs autorisés : adresseRue, codePostal, ville, telephoneSecondaire
+ * Les champs sensibles (email, telephone, nom, passwordHash) ne sont pas modifiables ici.
+ */
+router.patch('/profile', async (req, res) => {
+  try {
+    const CHAMPS_AUTORISES = ['adresseRue', 'codePostal', 'ville', 'telephoneSecondaire'];
+    const updates = {};
+
+    for (const champ of CHAMPS_AUTORISES) {
+      if (req.body[champ] !== undefined) {
+        updates[champ] = typeof req.body[champ] === 'string' ? req.body[champ].trim() : req.body[champ];
+      }
+    }
+
+    const client = await Client.findByIdAndUpdate(
+      req.client._id,
+      { ...updates, dateModification: Date.now() },
+      { new: true, runValidators: true }
+    ).select('-passwordHash');
+
+    res.json({ success: true, data: client });
+  } catch (error) {
+    console.error('Erreur mise à jour profil membre:', error);
     res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 });

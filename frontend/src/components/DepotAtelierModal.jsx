@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Camera, Check, FileText, QrCode, ChevronRight, Upload, Trash2 } from 'lucide-react';
+import { X, Camera, Check, FileText, QrCode, ChevronRight, Upload, Trash2, Mail } from 'lucide-react';
 import { interventions as interventionsAPI } from '../services/api';
 
 const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
@@ -225,6 +225,22 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
 
   const downloadFicheDA = () => {
     window.open(qrCodeData.ficheDAUrl, '_blank');
+  };
+
+  const telechargerEmailDepot = () => {
+    const token = localStorage.getItem('token');
+    const url = interventionsAPI.getEmailDepotUrl(intervention._id);
+    // Téléchargement avec authentification via fetch
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.blob())
+      .then(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Confirmation-depot-${intervention.numero}.eml`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      })
+      .catch(err => console.error('Erreur téléchargement email:', err));
   };
 
   if (!show) return null;
@@ -741,42 +757,58 @@ const DepotAtelierModal = ({ show, onClose, intervention, onSuccess }) => {
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+              gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 'var(--space-4)',
               marginBottom: 'var(--space-6)'
             }}>
-              <div className="card" style={{ textAlign: 'center' }}>
+              <div className="card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <QrCode size={48} style={{ color: 'var(--primary-500)', margin: '0 auto var(--space-3)' }} />
                 <h4 style={{ marginBottom: 'var(--space-2)' }}>QR Code</h4>
                 <img
                   src={qrCodeData.qrCodeUrl}
                   alt="QR Code"
                   style={{
-                    width: '200px',
-                    height: '200px',
+                    width: '160px',
+                    height: '160px',
                     margin: '0 auto var(--space-4)',
                     display: 'block'
                   }}
                 />
-                <button onClick={downloadQRCode} className="btn btn-secondary" style={{ width: '100%' }}>
+                <button onClick={downloadQRCode} className="btn btn-secondary" style={{ width: '100%', marginTop: 'auto' }}>
                   Télécharger QR Code
                 </button>
               </div>
 
-              <div className="card" style={{ textAlign: 'center' }}>
+              <div className="card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <FileText size={48} style={{ color: 'var(--primary-500)', margin: '0 auto var(--space-3)' }} />
                 <h4 style={{ marginBottom: 'var(--space-4)' }}>Fiche DA</h4>
-                <p style={{ color: 'var(--neutral-600)', fontSize: '0.875rem', marginBottom: 'var(--space-4)' }}>
+                <p style={{ color: 'var(--neutral-600)', fontSize: '0.875rem', marginBottom: 'var(--space-4)', flexGrow: 1 }}>
                   Document de dépôt atelier complet avec photos et accessoires
                 </p>
-                <button onClick={downloadFicheDA} className="btn btn-primary" style={{ width: '100%' }}>
+                <button onClick={downloadFicheDA} className="btn btn-primary" style={{ width: '100%', marginTop: 'auto' }}>
                   Télécharger Fiche DA
+                </button>
+              </div>
+
+              <div className="card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Mail size={48} style={{ color: 'var(--primary-500)', margin: '0 auto var(--space-3)' }} />
+                <h4 style={{ marginBottom: 'var(--space-2)' }}>Email client</h4>
+                <p style={{ color: 'var(--neutral-600)', fontSize: '0.8rem', marginBottom: 'var(--space-4)', flexGrow: 1 }}>
+                  Télécharge un fichier email prêt à envoyer avec la fiche DA et les photos en pièces jointes
+                </p>
+                <button
+                  onClick={telechargerEmailDepot}
+                  className="btn btn-primary"
+                  style={{ width: '100%', marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)' }}
+                >
+                  <Mail size={16} />
+                  Préparer l'email
                 </button>
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <button onClick={handleClose} className="btn btn-primary" style={{ minWidth: '200px' }}>
+              <button onClick={handleClose} className="btn btn-secondary" style={{ minWidth: '200px' }}>
                 Terminer
               </button>
             </div>

@@ -20,7 +20,27 @@
       "Bash(npm install:*)",
       "Bash(copy:*)",
       "Bash(node -e:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(node -c:*)",
+      "Bash(ls:*)",
+      "Bash(node scripts/importAppareilsPret.js:*)",
+      "Bash(git rm:*)",
+      "Bash(git reset:*)",
+      "Bash(npm run build:*)",
+      "Bash(tasklist:*)",
+      "Bash(ipconfig:*)",
+      "Bash(curl:*)",
+      "Bash(wc:*)",
+      "Bash(npx vite build)",
+      "Bash(node scripts/addTestClient.js:*)",
+      "Bash(npx vite build:*)",
+      "Bash(timeout 10 npx vite:*)",
+      "Bash(cd:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(git pull:*)",
+      "Bash(git:*)"
     ]
   }
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, FileText } from 'lucide-react';
 import { factures as facturesAPI } from '../services/api';
+import ResponsiveTable from '../components/ResponsiveTable';
 
 const Facturation = () => {
   const [factures, setFactures] = useState([]);
@@ -41,59 +42,77 @@ const Facturation = () => {
         </button>
       </div>
 
-      {loading ? (
-        <div className="card" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-          Chargement...
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Numéro</th>
-                <th>Type</th>
-                <th>Client</th>
-                <th>Date Émission</th>
-                <th>Date Échéance</th>
-                <th>Montant TTC</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {factures.map((facture) => (
-                <tr key={facture._id}>
-                  <td style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
-                    {facture.numero}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      <FileText size={16} style={{ color: 'var(--neutral-500)' }} />
-                      {facture.type}
-                    </div>
-                  </td>
-                  <td>
-                    {facture.clientId?.nom} {facture.clientId?.prenom}
-                  </td>
-                  <td style={{ fontSize: '0.875rem' }}>
-                    {new Date(facture.dateEmission).toLocaleDateString('fr-FR')}
-                  </td>
-                  <td style={{ fontSize: '0.875rem' }}>
-                    {facture.dateEcheance ? new Date(facture.dateEcheance).toLocaleDateString('fr-FR') : '-'}
-                  </td>
-                  <td style={{ fontWeight: 600 }}>
-                    {facture.totalTTC.toFixed(2)}€
-                  </td>
-                  <td>
-                    <span className={`badge badge-${statutColors[facture.statut]}`}>
-                      {facture.statut}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ResponsiveTable
+        loading={loading}
+        data={factures}
+        columns={[
+          {
+            header: 'Numéro',
+            render: (f) => (
+              <span style={{ fontWeight: 600, color: 'var(--primary-600)' }}>{f.numero}</span>
+            )
+          },
+          {
+            header: 'Type',
+            render: (f) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <FileText size={16} style={{ color: 'var(--neutral-500)' }} />
+                {f.type}
+              </div>
+            )
+          },
+          {
+            header: 'Client',
+            render: (f) => `${f.clientId?.nom || ''} ${f.clientId?.prenom || ''}`
+          },
+          {
+            header: 'Date Émission',
+            cellStyle: { fontSize: '0.875rem' },
+            render: (f) => new Date(f.dateEmission).toLocaleDateString('fr-FR')
+          },
+          {
+            header: 'Date Échéance',
+            cellStyle: { fontSize: '0.875rem' },
+            render: (f) => f.dateEcheance ? new Date(f.dateEcheance).toLocaleDateString('fr-FR') : '-'
+          },
+          {
+            header: 'Montant TTC',
+            render: (f) => <span style={{ fontWeight: 600 }}>{f.totalTTC.toFixed(2)}€</span>
+          },
+          {
+            header: 'Statut',
+            render: (f) => (
+              <span className={`badge badge-${statutColors[f.statut]}`}>{f.statut}</span>
+            )
+          }
+        ]}
+        mobileCardConfig={{
+          title: (f) => f.numero,
+          subtitle: (f) => `${f.clientId?.nom || ''} ${f.clientId?.prenom || ''}`,
+          badge: (f) => (
+            <span className={`badge badge-${statutColors[f.statut]}`}>{f.statut}</span>
+          ),
+          fields: [
+            {
+              label: 'Type',
+              render: (f) => f.type
+            },
+            {
+              label: 'Émission',
+              render: (f) => new Date(f.dateEmission).toLocaleDateString('fr-FR')
+            },
+            {
+              label: 'Échéance',
+              render: (f) => f.dateEcheance ? new Date(f.dateEcheance).toLocaleDateString('fr-FR') : '-'
+            },
+            {
+              label: 'Montant TTC',
+              render: (f) => `${f.totalTTC.toFixed(2)}€`
+            }
+          ]
+        }}
+        emptyMessage="Aucune facture trouvée"
+      />
 
       {/* Stats rapides */}
       <div className="grid grid-3" style={{ marginTop: 'var(--space-12)' }}>

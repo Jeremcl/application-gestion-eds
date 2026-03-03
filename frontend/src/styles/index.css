@@ -692,6 +692,37 @@ h6 { font-size: 0.875rem; }
 .mb-6 { margin-bottom: var(--space-6); }
 .text-center { text-align: center; }
 
+/* ===== PAGE HEADER ACTIONS ===== */
+.page-header-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+/* ===== PAGINATION ===== */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+}
+
+.pagination-pages {
+  display: flex;
+  gap: var(--space-2);
+}
+
 /* ===== ANIMATIONS ===== */
 @keyframes spin {
   from { transform: rotate(0deg); }
@@ -1343,6 +1374,22 @@ h6 { font-size: 0.875rem; }
     width: 100%;
     justify-content: center;
   }
+
+  .page-header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+  }
+
+  .page-header-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .page-header-actions .view-toggle {
+    justify-content: center;
+  }
 }
 
 /* ===== BREAKPOINT 480px - Petits telephones ===== */
@@ -1538,15 +1585,23 @@ h6 { font-size: 0.875rem; }
     margin-bottom: var(--space-4);
   }
 
-  .chatbot-header h2 {
+  .chatbot-welcome {
+    padding: var(--space-4) var(--space-3) var(--space-3) !important;
+  }
+
+  .chatbot-welcome h2 {
     font-size: 1.5rem !important;
+  }
+
+  .chatbot-welcome p {
+    font-size: 1rem !important;
   }
 
   .chatbot-messages {
     max-height: 300px !important;
   }
 
-  .chatbot-message {
+  .chatbot-message-bubble {
     max-width: 85% !important;
   }
 
@@ -1557,10 +1612,48 @@ h6 { font-size: 0.875rem; }
 
   .chatbot-input-container input {
     width: 100%;
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
   }
 
   .chatbot-input-container .btn {
     width: 100%;
+  }
+}
+
+/* Search bar reusable component */
+.search-bar {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.search-bar-input {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+
+.search-bar-input .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--neutral-400);
+}
+
+.search-bar-input .form-input {
+  padding-left: 40px;
+}
+
+@media (max-width: 640px) {
+  .search-bar {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .search-bar-input {
+    min-width: 100%;
   }
 }
 

@@ -1,4 +1,4 @@
-require('dotenv').config();
+clauderequire('dotenv').config();
 const mongoose = require('mongoose');
 const Intervention = require('../models/Intervention');
 
